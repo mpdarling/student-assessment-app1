@@ -350,7 +350,7 @@
                 for (let i = 0; i < appData.classes.length; i++) {
                     const className = appData.classes[i];
                     const columnLetter = String.fromCharCode(66 + i); // B, C, D, etc.
-                    const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}100`);
+                    const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}`);
                     appData.students[className] = studentsData.values ? 
                         studentsData.values.flat().filter(cell => cell) : [];
                 }
