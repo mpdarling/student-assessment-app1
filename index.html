@@ -324,8 +324,8 @@
                 console.log('Starting to load sheet data...');
                 
                 // Load basic data first - using correct Google Sheets range syntax
-                const teachersData = await fetchSheetRange('List Builders', 'B1:Z1');
-                const classesData = await fetchSheetRange('Group Builder', 'B1:Z1');
+                const teachersData = await fetchSheetRange('List Builders', 'B1:bf1');
+                const classesData = await fetchSheetRange('Group Builder', 'B1:bf1');
                 const skillsData = await fetchSheetRange('Survey Sender', 'B2:K2');
                 const skillAttributesData = await fetchSheetRange('Survey Sender', 'B3:K12');
                 
