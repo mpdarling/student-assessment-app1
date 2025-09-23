@@ -289,13 +289,9 @@
     </div>
     
     <script>
-        // Configuration - API credentials stored in base64 for light obfuscation
+        // Configuration
         const SHEET_ID = '1vAemqH6f60Ly16e7fdMTDCbDudnY1xfu3IUXnMo6m0w';
-        
-        // Put your Google API key here (replace YOUR_API_KEY_HERE with your actual key)
-        const CONFIG = {
-            key: 'AIzaSyA3a5pz0sW2vL3-fLj-zH7o7xY2sXQcYD8'  // ← Replace this with your actual Google API key
-        };
+        const API_KEY = 'AIzaSyA3a5pz0sW2vL3-fLj-zH7o7xY2sXQcYD8';
         
         // App state
         let appData = {
@@ -325,53 +321,76 @@
         // Load data from Google Sheets
         async function loadSheetData() {
             try {
-                // Load data from all required sheets
-                const [teachersData, classesData, skillsData, skillAttributesData] = await Promise.all([
-                    fetchSheetRange('List Builders', 'B1:1'),
-                    fetchSheetRange('Group Builder', 'B1:1'),
-                    fetchSheetRange('Survey Sender', 'B2:K2'),
-                    fetchSheetRange('Survey Sender', 'B3:K12')
-                ]);
+                console.log('Starting to load sheet data...');
+                
+                // Load basic data first - using your original ranges
+                const teachersData = await fetchSheetRange('List Builders', 'B1:1');
+                const classesData = await fetchSheetRange('Group Builder', 'B1:1');
+                const skillsData = await fetchSheetRange('Survey Sender', 'B2:K2');
+                const skillAttributesData = await fetchSheetRange('Survey Sender', 'B3:K12');
+                
+                console.log('Basic data loaded:', { teachersData, classesData, skillsData, skillAttributesData });
                 
                 // Process teachers
-                appData.teachers = teachersData.values ? teachersData.values[0].filter(cell => cell) : [];
+                appData.teachers = teachersData.values && teachersData.values[0] ? 
+                    teachersData.values[0].filter(cell => cell && cell.toString().trim() !== '') : [];
                 
                 // Process classes
-                appData.classes = classesData.values ? classesData.values[0].filter(cell => cell) : [];
+                appData.classes = classesData.values && classesData.values[0] ? 
+                    classesData.values[0].filter(cell => cell && cell.toString().trim() !== '') : [];
                 
                 // Process skills
-                appData.skills = skillsData.values ? skillsData.values[0].filter(cell => cell) : [];
+                appData.skills = skillsData.values && skillsData.values[0] ? 
+                    skillsData.values[0].filter(cell => cell && cell.toString().trim() !== '') : [];
                 
-                // Process skill attributes (take first row)
-                appData.skillAttributes = skillAttributesData.values ? skillAttributesData.values[0].filter(cell => cell) : [];
+                // Process skill attributes - take first row from the range
+                appData.skillAttributes = skillAttributesData.values && skillAttributesData.values[0] ? 
+                    skillAttributesData.values[0].filter(cell => cell && cell.toString().trim() !== '') : [];
+                
+                console.log('Processed basic data:', appData);
                 
                 // Load students for each class
                 appData.students = {};
-                for (let i = 0; i < appData.classes.length; i++) {
+                for (let i = 0; i < appData.classes.length && i < 20; i++) { // Limit to 20 classes max
                     const className = appData.classes[i];
                     const columnLetter = String.fromCharCode(66 + i); // B, C, D, etc.
-                    const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}`);
-                    appData.students[className] = studentsData.values ? 
-                        studentsData.values.flat().filter(cell => cell) : [];
+                    
+                    try {
+                        const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}`);
+                        console.log(`Students data for ${className}:`, studentsData);
+                        
+                        appData.students[className] = studentsData.values ? 
+                            studentsData.values.flat().filter(cell => cell && cell.toString().trim() !== '') : [];
+                    } catch (error) {
+                        console.warn(`Failed to load students for ${className}:`, error);
+                        appData.students[className] = [];
+                    }
                 }
+                
+                console.log('Final app data:', appData);
                 
             } catch (error) {
                 console.error('Error loading from sheets:', error);
-                showError('Error loading data from Google Sheets. Please check the setup.');
                 throw error;
             }
         }
         
         // Fetch data from Google Sheets
         async function fetchSheetRange(sheetName, range) {
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${sheetName}!${range}?key=${CONFIG.key}`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
+            console.log('Fetching:', url);
+            
             const response = await fetch(url);
             
             if (!response.ok) {
-                throw new Error(`Failed to fetch data: ${response.statusText}`);
+                const errorText = await response.text();
+                console.error('Fetch error:', response.status, errorText);
+                throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('Fetched data:', data);
+            return data;
         }
         
         // Submit assessment to Google Sheets
@@ -386,7 +405,7 @@
                 }
                 
                 // Append to the sheet
-                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/From the App:append?valueInputOption=RAW&key=${CONFIG.key}`;
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/From%20the%20App:append?valueInputOption=RAW&key=${API_KEY}`;
                 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -399,7 +418,8 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Failed to save data: ${response.statusText}`);
+                    const errorText = await response.text();
+                    throw new Error(`Failed to save data: ${response.status} ${errorText}`);
                 }
                 
                 return { success: true };
@@ -612,9 +632,6 @@
                 alert('Error saving assessment: ' + error.message);
             }
         }
-        
-        // Initialize when page loads
-        window.addEventListener('load', initApp);
     </script>
 </body>
 </html>
