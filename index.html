@@ -323,9 +323,9 @@
             try {
                 console.log('Starting to load sheet data...');
                 
-                // Load basic data first - using correct Google Sheets range syntax
-                const teachersData = await fetchSheetRange('List Builders', 'B1:bf1');
-                const classesData = await fetchSheetRange('Group Builder', 'B1:bf1');
+                // Load basic data first - using BF1 range as requested
+                const teachersData = await fetchSheetRange('List Builders', 'B1:BF1');
+                const classesData = await fetchSheetRange('Group Builder', 'B1:BF1');
                 const skillsData = await fetchSheetRange('Survey Sender', 'B2:K2');
                 const skillAttributesData = await fetchSheetRange('Survey Sender', 'B3:K12');
                 
@@ -343,15 +343,14 @@
                 appData.skills = skillsData.values && skillsData.values[0] ? 
                     skillsData.values[0].filter(cell => cell && cell.toString().trim() !== '') : [];
                 
-                // Process skill attributes - take first row from the range
-                appData.skillAttributes = skillAttributesData.values && skillAttributesData.values[0] ? 
-                    skillAttributesData.values[0].filter(cell => cell && cell.toString().trim() !== '') : [];
+                // Process skill attributes - get the full range, not just first row
+                appData.skillAttributes = skillAttributesData.values ? skillAttributesData.values : [];
                 
                 console.log('Processed basic data:', appData);
                 
                 // Load students for each class
                 appData.students = {};
-                for (let i = 0; i < appData.classes.length && i < 20; i++) { // Limit to 20 classes max
+                for (let i = 0; i < appData.classes.length && i < 100; i++) { // Limit to 20 classes max
                     const className = appData.classes[i];
                     const columnLetter = String.fromCharCode(66 + i); // B, C, D, etc.
                     
@@ -556,27 +555,59 @@
             submitBtn.addEventListener('click', submitAssessment);
         });
         
-        // Populate students based on selected class
+        // Populate students based on selected class - with better error handling
         function populateStudents() {
             const studentSelect = document.getElementById('student-select');
             studentSelect.innerHTML = '<option value="">Select a student...</option>';
             
+            console.log('Populating students for class:', appData.selectedClass);
+            console.log('Available student data:', appData.students);
+            
             const students = appData.students[appData.selectedClass] || [];
+            console.log('Students for this class:', students);
+            
+            if (students.length === 0) {
+                console.warn('No students found for class:', appData.selectedClass);
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No students found';
+                option.disabled = true;
+                studentSelect.appendChild(option);
+                return;
+            }
+            
             students.forEach(student => {
                 const option = document.createElement('option');
                 option.value = student;
                 option.textContent = student;
                 studentSelect.appendChild(option);
             });
+            
+            console.log('Student dropdown populated with', students.length, 'students');
         }
         
-        // Show skill attributes as checkboxes
+        // Show skill attributes as checkboxes - match skill to correct row
         function showSkillAttributes() {
             const attributesContainer = document.getElementById('skill-attributes');
             attributesContainer.innerHTML = '';
             attributesContainer.style.display = 'block';
             
-            appData.skillAttributes.forEach((attribute, index) => {
+            // Find which column the selected skill is in
+            const skillIndex = appData.skills.indexOf(appData.selectedSkill);
+            
+            if (skillIndex === -1 || !appData.skillAttributes[skillIndex]) {
+                console.warn('No attributes found for skill:', appData.selectedSkill);
+                return;
+            }
+            
+            // Get the attributes for this specific skill (the corresponding row)
+            const skillSpecificAttributes = appData.skillAttributes[skillIndex].filter(cell => 
+                cell && cell.toString().trim() !== ''
+            );
+            
+            console.log(`Showing attributes for skill "${appData.selectedSkill}" (index ${skillIndex}):`, skillSpecificAttributes);
+            
+            skillSpecificAttributes.forEach((attribute, index) => {
                 const item = document.createElement('div');
                 item.className = 'attribute-item';
                 item.dataset.index = index;
@@ -613,6 +644,8 @@
                 skill: appData.selectedSkill,
                 attributes: checkedAttributes
             };
+            
+            console.log('Submitting assessment:', assessmentData);
             
             try {
                 // Save to Google Sheets
