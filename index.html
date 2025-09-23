@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Assessment">
+    <title>Student Assessment App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            min-height: calc(100vh - 40px);
+        }
+        
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .content {
+            padding: 30px 20px;
+        }
+        
+        .screen {
+            display: none;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        .question {
+            margin-bottom: 25px;
+        }
+        
+        .question-label {
+            display: block;
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            background: white;
+            transition: border-color 0.2s;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 20px;
+        }
+        
+        .btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .skill-attributes {
+            margin-top: 25px;
+        }
+        
+        .attribute-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #fef2f2;
+            border: 2px solid #fca5a5;
+        }
+        
+        .attribute-item.checked {
+            background: #f0fdf4;
+            border-color: #4ade80;
+        }
+        
+        .attribute-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid #fca5a5;
+            background: white;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .attribute-item.checked .attribute-checkbox {
+            background: #4ade80;
+            border-color: #4ade80;
+        }
+        
+        .attribute-checkbox::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .attribute-item.checked .attribute-checkbox::after {
+            opacity: 1;
+        }
+        
+        .attribute-text {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+        
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .success-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            z-index: 1000;
+            text-align: center;
+            display: none;
+        }
+        
+        .success-popup.show {
+            display: block;
+        }
+        
+        .success-popup h3 {
+            color: #059669;
+            margin-bottom: 10px;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+        
+        .overlay.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Student Assessment</h1>
+            <p>Evaluate student skills and progress</p>
+        </div>
+        
+        <div class="content">
+            <!-- Loading Screen -->
+            <div id="loading-screen" class="screen active">
+                <div class="loading">
+                    <p>Loading data from spreadsheet...</p>
+                    <div id="error-message" class="error" style="display: none;"></div>
+                </div>
+            </div>
+            
+            <!-- Screen 1: Teacher and Class Selection -->
+            <div id="screen1" class="screen">
+                <div class="question">
+                    <label class="question-label">Who are you?</label>
+                    <select id="teacher-select">
+                        <option value="">Select a teacher...</option>
+                    </select>
+                </div>
+                
+                <div class="question">
+                    <label class="question-label">Which group do you want to assess?</label>
+                    <select id="class-select">
+                        <option value="">Select a class...</option>
+                    </select>
+                </div>
+                
+                <button class="btn" id="next-btn" disabled>Next</button>
+            </div>
+            
+            <!-- Screen 2: Assessment Screen -->
+            <div id="screen2" class="screen">
+                <div class="question">
+                    <label class="question-label">Skill</label>
+                    <select id="skill-select">
+                        <option value="">Select a skill...</option>
+                    </select>
+                </div>
+                
+                <div class="question">
+                    <label class="question-label">Student</label>
+                    <select id="student-select">
+                        <option value="">Select a student...</option>
+                    </select>
+                </div>
+                
+                <div id="skill-attributes" class="skill-attributes" style="display: none;">
+                    <!-- Skill attributes will be populated here -->
+                </div>
+                
+                <button class="btn" id="submit-btn" disabled>Submit Score</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Success Popup -->
+    <div class="overlay" id="overlay"></div>
+    <div class="success-popup" id="success-popup">
+        <h3>✅ Scores Saved</h3>
+        <p>Choose a new student</p>
+    </div>
+    
+    <script>
+        // Configuration - API credentials stored in base64 for light obfuscation
+        const SHEET_ID = '1vAemqH6f60Ly16e7fdMTDCbDudnY1xfu3IUXnMo6m0w';
+        
+        // Put your Google API key here (replace YOUR_API_KEY_HERE with your actual key)
+        const CONFIG = {
+            key: 'AIzaSyA3a5pz0sW2vL3-fLj-zH7o7xY2sXQcYD8'  // ← Replace this with your actual Google API key
+        };
+        
+        // App state
+        let appData = {
+            teachers: [],
+            classes: [],
+            skills: [],
+            skillAttributes: [],
+            students: {},
+            selectedTeacher: '',
+            selectedClass: '',
+            selectedSkill: '',
+            selectedStudent: ''
+        };
+        
+        // Initialize app
+        async function initApp() {
+            try {
+                await loadSheetData();
+                populateDropdowns();
+                showScreen('screen1');
+            } catch (error) {
+                showError('Failed to load data: ' + error.toString());
+                console.error('Error initializing app:', error);
+            }
+        }
+        
+        // Load data from Google Sheets
+        async function loadSheetData() {
+            try {
+                // Load data from all required sheets
+                const [teachersData, classesData, skillsData, skillAttributesData] = await Promise.all([
+                    fetchSheetRange('List Builders', 'B1:1'),
+                    fetchSheetRange('Group Builder', 'B1:1'),
+                    fetchSheetRange('Survey Sender', 'B2:K2'),
+                    fetchSheetRange('Survey Sender', 'B3:K12')
+                ]);
+                
+                // Process teachers
+                appData.teachers = teachersData.values ? teachersData.values[0].filter(cell => cell) : [];
+                
+                // Process classes
+                appData.classes = classesData.values ? classesData.values[0].filter(cell => cell) : [];
+                
+                // Process skills
+                appData.skills = skillsData.values ? skillsData.values[0].filter(cell => cell) : [];
+                
+                // Process skill attributes (take first row)
+                appData.skillAttributes = skillAttributesData.values ? skillAttributesData.values[0].filter(cell => cell) : [];
+                
+                // Load students for each class
+                appData.students = {};
+                for (let i = 0; i < appData.classes.length; i++) {
+                    const className = appData.classes[i];
+                    const columnLetter = String.fromCharCode(66 + i); // B, C, D, etc.
+                    const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}100`);
+                    appData.students[className] = studentsData.values ? 
+                        studentsData.values.flat().filter(cell => cell) : [];
+                }
+                
+            } catch (error) {
+                console.error('Error loading from sheets:', error);
+                showError('Error loading data from Google Sheets. Please check the setup.');
+                throw error;
+            }
+        }
+        
+        // Fetch data from Google Sheets
+        async function fetchSheetRange(sheetName, range) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${sheetName}!${range}?key=${CONFIG.key}`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch data: ${response.statusText}`);
+            }
+            
+            return await response.json();
+        }
+        
+        // Submit assessment to Google Sheets
+        async function submitToSheets(assessmentData) {
+            try {
+                // Prepare the row data
+                const rowData = [assessmentData.teacher, assessmentData.student];
+                
+                // Add attribute data (columns C through L)
+                for (let i = 0; i < 10; i++) {
+                    rowData.push(assessmentData.attributes[i] || '');
+                }
+                
+                // Append to the sheet
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/From the App:append?valueInputOption=RAW&key=${CONFIG.key}`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        values: [rowData]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to save data: ${response.statusText}`);
+                }
+                
+                return { success: true };
+                
+            } catch (error) {
+                console.error('Error saving to sheets:', error);
+                throw error;
+            }
+        }
+        
+        // Populate dropdown menus
+        function populateDropdowns() {
+            const teacherSelect = document.getElementById('teacher-select');
+            const classSelect = document.getElementById('class-select');
+            const skillSelect = document.getElementById('skill-select');
+            
+            // Clear existing options except first one
+            teacherSelect.innerHTML = '<option value="">Select a teacher...</option>';
+            classSelect.innerHTML = '<option value="">Select a class...</option>';
+            skillSelect.innerHTML = '<option value="">Select a skill...</option>';
+            
+            // Populate teachers
+            appData.teachers.forEach(teacher => {
+                const option = document.createElement('option');
+                option.value = teacher;
+                option.textContent = teacher;
+                teacherSelect.appendChild(option);
+            });
+            
+            // Populate classes
+            appData.classes.forEach(className => {
+                const option = document.createElement('option');
+                option.value = className;
+                option.textContent = className;
+                classSelect.appendChild(option);
+            });
+            
+            // Populate skills
+            appData.skills.forEach(skill => {
+                const option = document.createElement('option');
+                option.value = skill;
+                option.textContent = skill;
+                skillSelect.appendChild(option);
+            });
+        }
+        
+        // Show specific screen
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+        
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        // Show success popup
+        function showSuccessPopup() {
+            document.getElementById('overlay').classList.add('show');
+            document.getElementById('success-popup').classList.add('show');
+            
+            setTimeout(() => {
+                hideSuccessPopup();
+            }, 2000);
+        }
+        
+        function hideSuccessPopup() {
+            document.getElementById('overlay').classList.remove('show');
+            document.getElementById('success-popup').classList.remove('show');
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            
+            // Screen 1 event listeners
+            const teacherSelect = document.getElementById('teacher-select');
+            const classSelect = document.getElementById('class-select');
+            const nextBtn = document.getElementById('next-btn');
+            
+            function checkScreen1Complete() {
+                const teacherSelected = teacherSelect.value !== '';
+                const classSelected = classSelect.value !== '';
+                nextBtn.disabled = !(teacherSelected && classSelected);
+            }
+            
+            teacherSelect.addEventListener('change', (e) => {
+                appData.selectedTeacher = e.target.value;
+                checkScreen1Complete();
+            });
+            
+            classSelect.addEventListener('change', (e) => {
+                appData.selectedClass = e.target.value;
+                checkScreen1Complete();
+            });
+            
+            nextBtn.addEventListener('click', () => {
+                populateStudents();
+                showScreen('screen2');
+            });
+            
+            // Screen 2 event listeners
+            const skillSelect = document.getElementById('skill-select');
+            const studentSelect = document.getElementById('student-select');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            skillSelect.addEventListener('change', (e) => {
+                appData.selectedSkill = e.target.value;
+                if (e.target.value) {
+                    showSkillAttributes();
+                }
+                checkScreen2Complete();
+            });
+            
+            studentSelect.addEventListener('change', (e) => {
+                appData.selectedStudent = e.target.value;
+                checkScreen2Complete();
+            });
+            
+            function checkScreen2Complete() {
+                const skillSelected = skillSelect.value !== '';
+                const studentSelected = studentSelect.value !== '';
+                submitBtn.disabled = !(skillSelected && studentSelected);
+            }
+            
+            submitBtn.addEventListener('click', submitAssessment);
+        });
+        
+        // Populate students based on selected class
+        function populateStudents() {
+            const studentSelect = document.getElementById('student-select');
+            studentSelect.innerHTML = '<option value="">Select a student...</option>';
+            
+            const students = appData.students[appData.selectedClass] || [];
+            students.forEach(student => {
+                const option = document.createElement('option');
+                option.value = student;
+                option.textContent = student;
+                studentSelect.appendChild(option);
+            });
+        }
+        
+        // Show skill attributes as checkboxes
+        function showSkillAttributes() {
+            const attributesContainer = document.getElementById('skill-attributes');
+            attributesContainer.innerHTML = '';
+            attributesContainer.style.display = 'block';
+            
+            appData.skillAttributes.forEach((attribute, index) => {
+                const item = document.createElement('div');
+                item.className = 'attribute-item';
+                item.dataset.index = index;
+                
+                item.innerHTML = `
+                    <div class="attribute-checkbox"></div>
+                    <div class="attribute-text">${attribute}</div>
+                `;
+                
+                item.addEventListener('click', () => {
+                    item.classList.toggle('checked');
+                });
+                
+                attributesContainer.appendChild(item);
+            });
+        }
+        
+        // Submit assessment
+        async function submitAssessment() {
+            const attributeItems = document.querySelectorAll('.attribute-item');
+            const checkedAttributes = [];
+            
+            attributeItems.forEach((item, index) => {
+                if (item.classList.contains('checked')) {
+                    checkedAttributes[index] = appData.skillAttributes[index];
+                } else {
+                    checkedAttributes[index] = '';
+                }
+            });
+            
+            const assessmentData = {
+                teacher: appData.selectedTeacher,
+                student: appData.selectedStudent,
+                skill: appData.selectedSkill,
+                attributes: checkedAttributes
+            };
+            
+            try {
+                // Save to Google Sheets
+                await submitToSheets(assessmentData);
+                
+                // Clear checkboxes
+                attributeItems.forEach(item => {
+                    item.classList.remove('checked');
+                });
+                
+                // Reset student selection
+                document.getElementById('student-select').value = '';
+                appData.selectedStudent = '';
+                document.getElementById('submit-btn').disabled = true;
+                
+                // Show success message
+                showSuccessPopup();
+                
+            } catch (error) {
+                alert('Error saving assessment: ' + error.message);
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>
