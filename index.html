@@ -323,9 +323,9 @@
             try {
                 console.log('Starting to load sheet data...');
                 
-                // Load basic data first - using your original ranges
-                const teachersData = await fetchSheetRange('List Builders', 'B1:BJ1');
-                const classesData = await fetchSheetRange('Group Builder', 'B1:BF1');
+                // Load basic data first - using correct Google Sheets range syntax
+                const teachersData = await fetchSheetRange('List Builders', 'B1:Z1');
+                const classesData = await fetchSheetRange('Group Builder', 'B1:Z1');
                 const skillsData = await fetchSheetRange('Survey Sender', 'B2:K2');
                 const skillAttributesData = await fetchSheetRange('Survey Sender', 'B3:K12');
                 
@@ -356,11 +356,14 @@
                     const columnLetter = String.fromCharCode(66 + i); // B, C, D, etc.
                     
                     try {
-                        const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}`);
-                        console.log(`Students data for ${className}:`, studentsData);
+                        // Get students from row 3 down to row 100 in the class column
+                        const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}300`);
+                        console.log(`Students data for ${className} (column ${columnLetter}):`, studentsData);
                         
                         appData.students[className] = studentsData.values ? 
                             studentsData.values.flat().filter(cell => cell && cell.toString().trim() !== '') : [];
+                            
+                        console.log(`Final students for ${className}:`, appData.students[className]);
                     } catch (error) {
                         console.warn(`Failed to load students for ${className}:`, error);
                         appData.students[className] = [];
