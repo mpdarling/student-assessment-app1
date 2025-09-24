@@ -556,25 +556,24 @@
                 return [];
             }
             
-            // Calculate column letter (handles beyond Z: AA, AB, etc.)
+            // Calculate column letter - start at B for first class, C for second, etc.
             let columnLetter;
-            // Adjust for classes starting at column B (index 1)
-            const columnIndex = classIndex + 1; // +1 because classes start at column B
+            const columnIndex = classIndex + 1; // 0->B(1), 1->C(2), 2->D(3), etc. (where A=0, B=1...)
             
-            if (columnIndex <= 26) {
-                // A through Z (index 1-26)
-                columnLetter = String.fromCharCode(64 + columnIndex); // 64 + 1 = A, 64 + 2 = B, etc.
+            if (columnIndex < 26) {
+                // B through Z
+                columnLetter = String.fromCharCode(66 + classIndex); // B=66, C=67, etc.
             } else {
-                // AA, AB, AC, etc. (index 27+)
-                const firstLetter = String.fromCharCode(64 + Math.floor((columnIndex - 1) / 26));
-                const secondLetter = String.fromCharCode(65 + ((columnIndex - 1) % 26));
+                // AA, AB, AC, etc.
+                const firstLetter = String.fromCharCode(65 + Math.floor(classIndex / 26));
+                const secondLetter = String.fromCharCode(66 + (classIndex % 26));
                 columnLetter = firstLetter + secondLetter;
             }
             
             console.log(`Class "${className}" is in column ${columnLetter} (index ${classIndex})`);
             
             try {
-                const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}100`);
+                const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}300`);
                 console.log(`Raw student data:`, studentsData);
                 
                 const studentList = studentsData.values ? 
