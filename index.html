@@ -348,38 +348,10 @@
                 
                 console.log('Processed basic data:', appData);
                 
-                // Load students for each class
+                // Don't load students here - we'll load them on-demand when a class is selected
                 appData.students = {};
-                for (let i = 0; i < appData.classes.length && i < 50; i++) { // Limit to 20 classes max
-                    const className = appData.classes[i];
-                    const columnLetter = String.fromCharCode(66 + i); // B, C, D, etc.
-                    
-                    console.log(`\n--- Processing class ${i}: "${className}" (column ${columnLetter}) ---`);
-                    
-                    try {
-                        // Get students from row 3 down to row 100 in the class column
-                        const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}300`);
-                        console.log(`Raw students data for "${className}":`, studentsData);
-                        
-                        const studentList = studentsData.values ? 
-                            studentsData.values.flat().filter(cell => cell && cell.toString().trim() !== '') : [];
-                            
-                        console.log(`Processed student list for "${className}":`, studentList);
-                        console.log(`Student count: ${studentList.length}`);
-                        
-                        // Store using exact class name
-                        appData.students[className] = studentList;
-                        
-                    } catch (error) {
-                        console.warn(`Failed to load students for "${className}":`, error);
-                        appData.students[className] = [];
-                    }
-                }
                 
-                console.log('\n--- Final student mapping ---');
-                Object.keys(appData.students).forEach(key => {
-                    console.log(`"${key}": ${appData.students[key].length} students`);
-                });
+                console.log('Basic data loaded. Students will be loaded when class is selected.');
                 
                 console.log('Final app data:', appData);
                 
@@ -535,8 +507,8 @@
                 checkScreen1Complete();
             });
             
-            nextBtn.addEventListener('click', () => {
-                populateStudents();
+            nextBtn.addEventListener('click', async () => {
+                await populateStudents();
                 showScreen('screen2');
             });
             
@@ -567,35 +539,96 @@
             submitBtn.addEventListener('click', submitAssessment);
         });
         
-        // Populate students based on selected class - with better error handling
-        function populateStudents() {
-            const studentSelect = document.getElementById('student-select');
-            studentSelect.innerHTML = '<option value="">Select a student...</option>';
-            
-            console.log('Populating students for class:', appData.selectedClass);
-            console.log('Available student data:', appData.students);
-            
-            const students = appData.students[appData.selectedClass] || [];
-            console.log('Students for this class:', students);
-            
-            if (students.length === 0) {
-                console.warn('No students found for class:', appData.selectedClass);
-                const option = document.createElement('option');
-                option.value = '';
-                option.textContent = 'No students found';
-                option.disabled = true;
-                studentSelect.appendChild(option);
-                return;
+        // Load students for a specific class on-demand
+        async function loadStudentsForClass(className) {
+            // Check if we already have the students for this class
+            if (appData.students[className]) {
+                console.log(`Students for "${className}" already loaded`);
+                return appData.students[className];
             }
             
-            students.forEach(student => {
-                const option = document.createElement('option');
-                option.value = student;
-                option.textContent = student;
-                studentSelect.appendChild(option);
-            });
+            console.log(`Loading students for class: "${className}"`);
             
-            console.log('Student dropdown populated with', students.length, 'students');
+            // Find which column this class is in
+            const classIndex = appData.classes.indexOf(className);
+            if (classIndex === -1) {
+                console.error(`Class "${className}" not found in class list`);
+                return [];
+            }
+            
+            // Calculate column letter (handles beyond Z: AA, AB, etc.)
+            let columnLetter;
+            const adjustedIndex = classIndex + 1; // Classes start at column B (index 1)
+            
+            if (adjustedIndex < 26) {
+                columnLetter = String.fromCharCode(65 + adjustedIndex); // A, B, C, etc.
+            } else {
+                // For columns beyond Z: AA, AB, AC, etc.
+                const firstLetter = String.fromCharCode(65 + Math.floor((adjustedIndex - 26) / 26));
+                const secondLetter = String.fromCharCode(65 + ((adjustedIndex - 26) % 26));
+                columnLetter = firstLetter + secondLetter;
+            }
+            
+            console.log(`Class "${className}" is in column ${columnLetter} (index ${classIndex})`);
+            
+            try {
+                const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}300`);
+                console.log(`Raw student data:`, studentsData);
+                
+                const studentList = studentsData.values ? 
+                    studentsData.values.flat().filter(cell => cell && cell.toString().trim() !== '') : [];
+                    
+                console.log(`Found ${studentList.length} students:`, studentList);
+                
+                // Cache the result
+                appData.students[className] = studentList;
+                
+                return studentList;
+                
+            } catch (error) {
+                console.error(`Failed to load students for "${className}":`, error);
+                appData.students[className] = [];
+                return [];
+            }
+        }
+        
+        // Populate students based on selected class - load on demand
+        async function populateStudents() {
+            const studentSelect = document.getElementById('student-select');
+            studentSelect.innerHTML = '<option value="">Loading students...</option>';
+            
+            console.log('Populating students for class:', appData.selectedClass);
+            
+            try {
+                // Load students for the selected class
+                const students = await loadStudentsForClass(appData.selectedClass);
+                
+                // Clear loading message
+                studentSelect.innerHTML = '<option value="">Select a student...</option>';
+                
+                if (students.length === 0) {
+                    console.warn('No students found for class:', appData.selectedClass);
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No students found';
+                    option.disabled = true;
+                    studentSelect.appendChild(option);
+                    return;
+                }
+                
+                students.forEach(student => {
+                    const option = document.createElement('option');
+                    option.value = student;
+                    option.textContent = student;
+                    studentSelect.appendChild(option);
+                });
+                
+                console.log('Student dropdown populated with', students.length, 'students');
+                
+            } catch (error) {
+                console.error('Error loading students:', error);
+                studentSelect.innerHTML = '<option value="">Error loading students</option>';
+            }
         }
         
         // Show skill attributes as checkboxes - match skill to correct row
