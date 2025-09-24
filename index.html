@@ -8,217 +8,58 @@
     <meta name="apple-mobile-web-app-title" content="Assessment">
     <title>Student Assessment App</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
         .container {
-            max-width: 400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-            min-height: calc(100vh - 40px);
+            max-width: 400px; margin: 0 auto; background: white; border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; min-height: calc(100vh - 40px);
         }
-        
-        .header {
-            background: #2563eb;
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        
-        .header p {
-            opacity: 0.9;
-            font-size: 14px;
-        }
-        
-        .content {
-            padding: 30px 20px;
-        }
-        
-        .screen {
-            display: none;
-        }
-        
-        .screen.active {
-            display: block;
-        }
-        
-        .question {
-            margin-bottom: 25px;
-        }
-        
-        .question-label {
-            display: block;
-            font-weight: 600;
-            color: #1e40af;
-            margin-bottom: 8px;
-            font-size: 16px;
-        }
-        
+        .header { background: #2563eb; color: white; padding: 30px 20px; text-align: center; }
+        .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+        .header p { opacity: 0.9; font-size: 14px; }
+        .content { padding: 30px 20px; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        .question { margin-bottom: 25px; }
+        .question-label { display: block; font-weight: 600; color: #1e40af; margin-bottom: 8px; font-size: 16px; }
         select {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            font-size: 16px;
-            background: white;
-            transition: border-color 0.2s;
+            width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; background: white; transition: border-color 0.2s;
         }
-        
-        select:focus {
-            outline: none;
-            border-color: #2563eb;
-        }
-        
+        select:focus { outline: none; border-color: #2563eb; }
         .btn {
-            width: 100%;
-            padding: 16px;
-            background: #2563eb;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-top: 20px;
+            width: 100%; padding: 16px; background: #2563eb; color: white; border: none; border-radius: 12px; font-size: 18px;
+            font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 20px;
         }
-        
-        .btn:hover {
-            background: #1d4ed8;
-        }
-        
-        .btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-        
-        .skill-attributes {
-            margin-top: 25px;
-        }
-        
+        .btn:hover { background: #1d4ed8; }
+        .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+        .skill-attributes { margin-top: 25px; }
         .attribute-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #fef2f2;
-            border: 2px solid #fca5a5;
+            display: flex; align-items: center; padding: 12px; margin: 8px 0; border-radius: 12px; cursor: pointer; transition: all 0.2s;
+            background: #fef2f2; border: 2px solid #fca5a5;
         }
-        
-        .attribute-item.checked {
-            background: #f0fdf4;
-            border-color: #4ade80;
-        }
-        
+        .attribute-item.checked { background: #f0fdf4; border-color: #4ade80; }
         .attribute-checkbox {
-            width: 20px;
-            height: 20px;
-            border-radius: 6px;
-            border: 2px solid #fca5a5;
-            background: white;
-            margin-right: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
+            width: 20px; height: 20px; border-radius: 6px; border: 2px solid #fca5a5; background: white; margin-right: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
         }
-        
-        .attribute-item.checked .attribute-checkbox {
-            background: #4ade80;
-            border-color: #4ade80;
-        }
-        
-        .attribute-checkbox::after {
-            content: '✓';
-            color: white;
-            font-weight: bold;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        
-        .attribute-item.checked .attribute-checkbox::after {
-            opacity: 1;
-        }
-        
-        .attribute-text {
-            flex: 1;
-            font-weight: 500;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px 20px;
-            color: #6b7280;
-        }
-        
-        .error {
-            background: #fef2f2;
-            border: 1px solid #fca5a5;
-            color: #dc2626;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-        
+        .attribute-item.checked .attribute-checkbox { background: #4ade80; border-color: #4ade80; }
+        .attribute-checkbox::after { content: '✓'; color: white; font-weight: bold; opacity: 0; transition: opacity 0.2s; }
+        .attribute-item.checked .attribute-checkbox::after { opacity: 1; }
+        .attribute-text { flex: 1; font-weight: 500; }
+        .loading { text-align: center; padding: 40px 20px; color: #6b7280; }
+        .error { background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626; padding: 12px; border-radius: 8px; margin: 10px 0; }
         .success-popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            z-index: 1000;
-            text-align: center;
-            display: none;
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 1000; text-align: center; display: none;
         }
-        
-        .success-popup.show {
-            display: block;
-        }
-        
-        .success-popup h3 {
-            color: #059669;
-            margin-bottom: 10px;
-        }
-        
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            display: none;
-        }
-        
-        .overlay.show {
-            display: block;
-        }
+        .success-popup.show { display: block; }
+        .success-popup h3 { color: #059669; margin-bottom: 10px; }
+        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; display: none; }
+        .overlay.show { display: block; }
     </style>
 </head>
 <body>
@@ -227,7 +68,7 @@
             <h1>Student Assessment</h1>
             <p>Evaluate student skills and progress</p>
         </div>
-        
+
         <div class="content">
             <!-- Loading Screen -->
             <div id="loading-screen" class="screen active">
@@ -236,7 +77,7 @@
                     <div id="error-message" class="error" style="display: none;"></div>
                 </div>
             </div>
-            
+
             <!-- Screen 1: Teacher and Class Selection -->
             <div id="screen1" class="screen">
                 <div class="question">
@@ -245,17 +86,17 @@
                         <option value="">Select a teacher...</option>
                     </select>
                 </div>
-                
+
                 <div class="question">
                     <label class="question-label">Which group do you want to assess?</label>
                     <select id="class-select">
                         <option value="">Select a class...</option>
                     </select>
                 </div>
-                
+
                 <button class="btn" id="next-btn" disabled>Next</button>
             </div>
-            
+
             <!-- Screen 2: Assessment Screen -->
             <div id="screen2" class="screen">
                 <div class="question">
@@ -264,35 +105,35 @@
                         <option value="">Select a skill...</option>
                     </select>
                 </div>
-                
+
                 <div class="question">
                     <label class="question-label">Student</label>
                     <select id="student-select">
                         <option value="">Select a student...</option>
                     </select>
                 </div>
-                
+
                 <div id="skill-attributes" class="skill-attributes" style="display: none;">
                     <!-- Skill attributes will be populated here -->
                 </div>
-                
+
                 <button class="btn" id="submit-btn" disabled>Submit Score</button>
             </div>
         </div>
     </div>
-    
+
     <!-- Success Popup -->
     <div class="overlay" id="overlay"></div>
     <div class="success-popup" id="success-popup">
         <h3>✅ Scores Saved</h3>
         <p>Choose a new student</p>
     </div>
-    
+
     <script>
         // Configuration
         const SHEET_ID = '1vAemqH6f60Ly16e7fdMTDCbDudnY1xfu3IUXnMo6m0w';
         const API_KEY = 'AIzaSyA3a5pz0sW2vL3-fLj-zH7o7xY2sXQcYD8';
-        
+
         // App state
         let appData = {
             teachers: [],
@@ -305,7 +146,7 @@
             selectedSkill: '',
             selectedStudent: ''
         };
-        
+
         // Initialize app
         async function initApp() {
             try {
@@ -317,125 +158,93 @@
                 console.error('Error initializing app:', error);
             }
         }
-        
+
         // Load data from Google Sheets
         async function loadSheetData() {
             try {
-                console.log('Starting to load sheet data...');
-                
-                // Load basic data first - using BF1 range as requested
+                // Load basic data
                 const teachersData = await fetchSheetRange('List Builders', 'B1:BF1');
                 const classesData = await fetchSheetRange('Group Builder', 'B1:BF1');
                 const skillsData = await fetchSheetRange('Survey Sender', 'B2:K2');
                 const skillAttributesData = await fetchSheetRange('Survey Sender', 'B3:K12');
-                
-                console.log('Basic data loaded:', { teachersData, classesData, skillsData, skillAttributesData });
-                
+
                 // Process teachers
-                appData.teachers = teachersData.values && teachersData.values[0] ? 
-                    teachersData.values[0].filter(cell => cell && cell.toString().trim() !== '') : [];
-                
+                appData.teachers = teachersData.values && teachersData.values[0]
+                    ? teachersData.values[0].filter(cell => cell && cell.toString().trim() !== '')
+                    : [];
+
                 // Process classes
-                appData.classes = classesData.values && classesData.values[0] ? 
-                    classesData.values[0].filter(cell => cell && cell.toString().trim() !== '') : [];
-                
+                appData.classes = classesData.values && classesData.values[0]
+                    ? classesData.values[0].filter(cell => cell && cell.toString().trim() !== '')
+                    : [];
+
                 // Process skills
-                appData.skills = skillsData.values && skillsData.values[0] ? 
-                    skillsData.values[0].filter(cell => cell && cell.toString().trim() !== '') : [];
-                
-                // Process skill attributes - get the full range, not just first row
+                appData.skills = skillsData.values && skillsData.values[0]
+                    ? skillsData.values[0].filter(cell => cell && cell.toString().trim() !== '')
+                    : [];
+
+                // Skill attributes (B3:K12 = 10 rows x up to 10 cols)
                 appData.skillAttributes = skillAttributesData.values ? skillAttributesData.values : [];
-                
-                console.log('Processed basic data:', appData);
-                
+
                 // Initialize empty students object - will be populated on-demand
                 appData.students = {};
-                
-                console.log('Basic data loaded successfully. Students will be loaded when class is selected.');
-                
-                console.log('Final app data:', appData);
-                
             } catch (error) {
                 console.error('Error loading from sheets:', error);
                 throw error;
             }
         }
-        
-        // Fetch data from Google Sheets
+
+        // Fetch data from Google Sheets (public read with API key)
         async function fetchSheetRange(sheetName, range) {
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
-            console.log('Fetching:', url);
-            
             const response = await fetch(url);
-            
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Fetch error:', response.status, errorText);
-                throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
+                throw new Error(`Failed to fetch data: ${response.status} ${response.statusText} - ${errorText}`);
             }
-            
-            const data = await response.json();
-            console.log('Fetched data:', data);
-            return data;
+            return await response.json();
         }
-        
-        // Submit assessment to Google Sheets
-        // Replace your existing submitToSheets function with this one:
 
+        // Submit assessment to Google Apps Script Web App (JSON, no no-cors)
         async function submitToSheets(assessmentData) {
-            try {
-                // YOUR WEB APP URL - You'll get this after deploying the Google Apps Script
-                // It will look like: https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
-                const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzrpionFNO77DwIZJZR2lwUL0RrKnMS33Fm5ag2D1asiitu-OukNLUxNUxrPxkAEx7lLg/exec'; // <-- You'll update this
-        
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // Important for cross-origin requests to Google Apps Script
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(assessmentData)
-                });
-        
-                // Note: With no-cors mode, we can't read the response, 
-                // but the data will still be saved
-                console.log('Data submitted successfully');
-                return { success: true };
-        
-            } catch (error) {
-                console.error('Error saving to sheets:', error);
-                throw error;
-            }
+            const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxEM6_H3a0TjjfFsI0REJu-rlJ9W9_nhrnM1UXNQMSkCe4p2NGxO6KBQBq-GkDAM_aB8w/exec'; // update if you re-deployed
+
+            const res = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(assessmentData)
+            });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Save failed');
+            return { success: true };
         }
-        
+
         // Populate dropdown menus
         function populateDropdowns() {
             const teacherSelect = document.getElementById('teacher-select');
             const classSelect = document.getElementById('class-select');
             const skillSelect = document.getElementById('skill-select');
-            
-            // Clear existing options except first one
+
             teacherSelect.innerHTML = '<option value="">Select a teacher...</option>';
             classSelect.innerHTML = '<option value="">Select a class...</option>';
             skillSelect.innerHTML = '<option value="">Select a skill...</option>';
-            
-            // Populate teachers
+
             appData.teachers.forEach(teacher => {
                 const option = document.createElement('option');
                 option.value = teacher;
                 option.textContent = teacher;
                 teacherSelect.appendChild(option);
             });
-            
-            // Populate classes
+
             appData.classes.forEach(className => {
                 const option = document.createElement('option');
                 option.value = className;
                 option.textContent = className;
                 classSelect.appendChild(option);
             });
-            
-            // Populate skills
+
             appData.skills.forEach(skill => {
                 const option = document.createElement('option');
                 option.value = skill;
@@ -443,187 +252,125 @@
                 skillSelect.appendChild(option);
             });
         }
-        
+
         // Show specific screen
         function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
         }
-        
+
         // Show error message
         function showError(message) {
             const errorDiv = document.getElementById('error-message');
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
         }
-        
-        // Show success popup
+
+        // Success popup
         function showSuccessPopup() {
             document.getElementById('overlay').classList.add('show');
             document.getElementById('success-popup').classList.add('show');
-            
-            setTimeout(() => {
-                hideSuccessPopup();
-            }, 2000);
+            setTimeout(hideSuccessPopup, 2000);
         }
-        
         function hideSuccessPopup() {
             document.getElementById('overlay').classList.remove('show');
             document.getElementById('success-popup').classList.remove('show');
         }
-        
+
         // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
             initApp();
-            
-            // Screen 1 event listeners
+
+            // Screen 1
             const teacherSelect = document.getElementById('teacher-select');
             const classSelect = document.getElementById('class-select');
             const nextBtn = document.getElementById('next-btn');
-            
+
             function checkScreen1Complete() {
-                const teacherSelected = teacherSelect.value !== '';
-                const classSelected = classSelect.value !== '';
-                nextBtn.disabled = !(teacherSelected && classSelected);
+                nextBtn.disabled = !(teacherSelect.value !== '' && classSelect.value !== '');
             }
-            
-            teacherSelect.addEventListener('change', (e) => {
+
+            teacherSelect.addEventListener('change', e => {
                 appData.selectedTeacher = e.target.value;
                 checkScreen1Complete();
             });
-            
-            classSelect.addEventListener('change', (e) => {
+
+            classSelect.addEventListener('change', e => {
                 appData.selectedClass = e.target.value;
                 checkScreen1Complete();
             });
-            
+
             nextBtn.addEventListener('click', async () => {
                 await populateStudents();
                 showScreen('screen2');
             });
-            
-            // Screen 2 event listeners
+
+            // Screen 2
             const skillSelect = document.getElementById('skill-select');
             const studentSelect = document.getElementById('student-select');
             const submitBtn = document.getElementById('submit-btn');
-            
-            skillSelect.addEventListener('change', (e) => {
+
+            function checkScreen2Complete() {
+                submitBtn.disabled = !(skillSelect.value !== '' && studentSelect.value !== '');
+            }
+
+            skillSelect.addEventListener('change', e => {
                 appData.selectedSkill = e.target.value;
-                if (e.target.value) {
-                    showSkillAttributes();
-                }
+                if (e.target.value) showSkillAttributes();
                 checkScreen2Complete();
             });
-            
-            studentSelect.addEventListener('change', (e) => {
+
+            studentSelect.addEventListener('change', e => {
                 appData.selectedStudent = e.target.value;
                 checkScreen2Complete();
             });
-            
-            function checkScreen2Complete() {
-                const skillSelected = skillSelect.value !== '';
-                const studentSelected = studentSelect.value !== '';
-                submitBtn.disabled = !(skillSelected && studentSelected);
-            }
-            
+
             submitBtn.addEventListener('click', submitAssessment);
         });
-        
-        // Replace your loadStudentsForClass function with this corrected version:
 
-       // Replace your entire loadStudentsForClass function with this version:
-        
+        // Load students for selected class (header lookup + A1 column math)
         async function loadStudentsForClass(className) {
-            // Check if we already have the students for this class
             if (appData.students[className]) {
-                console.log(`Students for "${className}" already loaded`);
                 return appData.students[className];
             }
-    
-            console.log(`Loading students for class: "${className}"`);
-    
-            // Instead of using the index from the filtered class list,
-            // we need to find the actual column position in the original data
-            // This requires us to store the original column positions
-    
-            // First, let's find the actual column by searching the raw data
-            try {
-                // Fetch the raw header row to find the exact column
-                const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
-                const allColumns = headerData.values ? headerData.values[0] : [];
-        
-                // Find the exact column index (including empty cells)
-                let actualColumnIndex = -1;
-                for (let i = 0; i < allColumns.length; i++) {
-                    if (allColumns[i] && allColumns[i].toString().trim() === className) {
-                        actualColumnIndex = i;
-                        break;
-                    }
+            const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
+            const allColumns = headerData.values ? headerData.values[0] : [];
+            let actualColumnIndex = -1;
+            for (let i = 0; i < allColumns.length; i++) {
+                if (allColumns[i] && allColumns[i].toString().trim() === className) {
+                    actualColumnIndex = i; break;
                 }
-        
-                if (actualColumnIndex === -1) {
-                    console.error(`Class "${className}" not found in Group Builder headers`);
-                    return [];
-                }
-        
-                // Calculate the column letter based on the actual position
-                // actualColumnIndex 0 = column B (2)
-                // actualColumnIndex 1 = column C (3)
-                // etc.
-                const columnNumber = actualColumnIndex + 2; // +2 because we start at column B
-                let columnLetter;
-        
-                if (columnNumber <= 26) {
-                    // Single letter columns (A-Z)
-                    columnLetter = String.fromCharCode(64 + columnNumber);
-                } else {
-                    // Double letter columns (AA, AB, AC, etc.)
-                    const firstLetterNum = Math.floor((columnNumber - 1) / 26);
-                    const secondLetterNum = (columnNumber - 1) % 26;
-                    columnLetter = String.fromCharCode(64 + firstLetterNum) + String.fromCharCode(65 + secondLetterNum);
-                }
-        
-                console.log(`Class "${className}" found at actual column index ${actualColumnIndex}, column ${columnLetter}`);
-        
-                // Now fetch the students from the correct column
-                const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}300`);
-                console.log(`Raw student data:`, studentsData);
-        
-                const studentList = studentsData.values ? 
-                    studentsData.values.flat().filter(cell => cell && cell.toString().trim() !== '') : [];
-            
-                console.log(`Found ${studentList.length} students:`, studentList);
-        
-                // Cache the result
-                appData.students[className] = studentList;
-        
-                return studentList;
-        
-            } catch (error) {
-                console.error(`Failed to load students for "${className}":`, error);
-                appData.students[className] = [];
-                return [];
             }
+            if (actualColumnIndex === -1) return [];
+
+            const columnNumber = actualColumnIndex + 2; // B = 2
+            function toA1(num) {
+                let s = '';
+                while (num > 0) {
+                    const m = (num - 1) % 26;
+                    s = String.fromCharCode(65 + m) + s;
+                    num = Math.floor((num - 1) / 26);
+                }
+                return s;
+            }
+            const columnLetter = toA1(columnNumber);
+
+            const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}300`);
+            const studentList = studentsData.values
+              ? studentsData.values.flat().filter(cell => cell && cell.toString().trim() !== '')
+              : [];
+            appData.students[className] = studentList;
+            return studentList;
         }
-        
-        // Populate students based on selected class - load on demand
+
+        // Populate students dropdown
         async function populateStudents() {
             const studentSelect = document.getElementById('student-select');
             studentSelect.innerHTML = '<option value="">Loading students...</option>';
-            
-            console.log('Populating students for class:', appData.selectedClass);
-            
             try {
-                // Load students for the selected class
                 const students = await loadStudentsForClass(appData.selectedClass);
-                
-                // Clear loading message
                 studentSelect.innerHTML = '<option value="">Select a student...</option>';
-                
                 if (students.length === 0) {
-                    console.warn('No students found for class:', appData.selectedClass);
                     const option = document.createElement('option');
                     option.value = '';
                     option.textContent = 'No students found';
@@ -631,133 +378,92 @@
                     studentSelect.appendChild(option);
                     return;
                 }
-                
                 students.forEach(student => {
                     const option = document.createElement('option');
                     option.value = student;
                     option.textContent = student;
                     studentSelect.appendChild(option);
                 });
-                
-                console.log('Student dropdown populated with', students.length, 'students');
-                
             } catch (error) {
                 console.error('Error loading students:', error);
                 studentSelect.innerHTML = '<option value="">Error loading students</option>';
             }
         }
-        
-        // Show skill attributes as checkboxes - match skill to correct row
+
+        // Show skill attributes (exactly 10 rows if present)
         function showSkillAttributes() {
             const attributesContainer = document.getElementById('skill-attributes');
             attributesContainer.innerHTML = '';
             attributesContainer.style.display = 'block';
-            
-            // Find which column the selected skill is in (skills are in row 2: B2:K2)
+
             const skillIndex = appData.skills.indexOf(appData.selectedSkill);
-            
-            if (skillIndex === -1) {
-                console.warn('No attributes found for skill:', appData.selectedSkill);
-                return;
-            }
-            
-            console.log(`Selected skill "${appData.selectedSkill}" is at index ${skillIndex}`);
-            console.log('All skill attributes data:', appData.skillAttributes);
-            
-            // Get all attributes for this skill column (all rows from B3:K12 for this column)
-            const skillSpecificAttributes = [];
-            
-            // Loop through all rows of attributes (should be 10 rows: B3:K12)
-            for (let rowIndex = 0; rowIndex < appData.skillAttributes.length; rowIndex++) {
-                const row = appData.skillAttributes[rowIndex];
-                if (row && row[skillIndex] && row[skillIndex].toString().trim() !== '') {
-                    skillSpecificAttributes.push(row[skillIndex]);
-                }
-            }
-            
-            console.log(`Attributes for skill "${appData.selectedSkill}":`, skillSpecificAttributes);
-            
-            if (skillSpecificAttributes.length === 0) {
-                console.warn('No attributes found for this skill');
-                return;
-            }
-            
-            skillSpecificAttributes.forEach((attribute, index) => {
+            if (skillIndex === -1) return;
+
+            const rows = appData.skillAttributes || [];
+            const col = Array.from({ length: 10 }, (_, r) => {
+                const row = rows[r] || [];
+                return (row[skillIndex] || '').toString().trim();
+            });
+
+            col.forEach((attribute, index) => {
                 const item = document.createElement('div');
                 item.className = 'attribute-item';
                 item.dataset.index = index;
-                
                 item.innerHTML = `
                     <div class="attribute-checkbox"></div>
-                    <div class="attribute-text">${attribute}</div>
+                    <div class="attribute-text">${attribute || `<em>—</em>`}</div>
                 `;
-                
                 item.addEventListener('click', () => {
+                    if (!attribute) return; // don't select blanks
                     item.classList.toggle('checked');
                 });
-                
                 attributesContainer.appendChild(item);
             });
         }
-        
-        // Replace your submitAssessment function with this version:
 
+        // Submit assessment
         async function submitAssessment() {
             const attributeItems = document.querySelectorAll('.attribute-item');
             const checkedAttributes = [];
-    
-            // For each attribute item (in order), either include its text or an empty string
+
             attributeItems.forEach((item) => {
                 if (item.classList.contains('checked')) {
-                    // Get the actual text of this specific attribute
                     const attributeText = item.querySelector('.attribute-text').textContent;
                     checkedAttributes.push(attributeText);
                 } else {
-                    // Not checked - push empty string to maintain position
                     checkedAttributes.push('');
                 }
             });
-    
-            // If there are fewer than 10 attributes for this skill, pad with empty strings
-            // This ensures columns C through L are always filled (even if empty)
-            while (checkedAttributes.length < 10) {
-                checkedAttributes.push('');
-            }
-    
-            // If somehow there are more than 10, trim to 10
-            if (checkedAttributes.length > 10) {
-                checkedAttributes.length = 10;
-            }
-    
+
+            while (checkedAttributes.length < 10) checkedAttributes.push('');
+            if (checkedAttributes.length > 10) checkedAttributes.length = 10;
+
             const assessmentData = {
                 teacher: appData.selectedTeacher,
                 student: appData.selectedStudent,
-                skill: appData.selectedSkill,
+                skill: appData.selectedSkill, // not stored server-side (OK to include)
                 attributes: checkedAttributes
             };
-    
-            console.log('Submitting assessment:', assessmentData);
-            console.log('Attributes array (10 elements):', checkedAttributes);
-    
+
+            const submitBtn = document.getElementById('submit-btn');
             try {
-                // Save to Google Sheets
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving…';
                 await submitToSheets(assessmentData);
-        
+
                 // Clear checkboxes
-                attributeItems.forEach(item => {
-                    item.classList.remove('checked');
-                });
-        
+                attributeItems.forEach(item => item.classList.remove('checked'));
+
                 // Reset student selection
                 document.getElementById('student-select').value = '';
                 appData.selectedStudent = '';
-                document.getElementById('submit-btn').disabled = true;
-        
-                // Show success message
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submit Score';
+
                 showSuccessPopup();
-        
             } catch (error) {
-                alert('Error saving assessment: ' + error.message);
+                submitBtn.textContent = 'Submit Score';
+                showError('Error saving assessment: ' + error.message);
             }
         }
     </script>
