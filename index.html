@@ -533,6 +533,8 @@
         
         // Replace your loadStudentsForClass function with this corrected version:
 
+        // Replace your loadStudentsForClass function with this corrected version:
+
         async function loadStudentsForClass(className) {
             // Check if we already have the students for this class
             if (appData.students[className]) {
@@ -549,21 +551,36 @@
                 return [];
             }
     
-            // Calculate column letter - start at B (index 1) for first class
+            // Calculate column letter
+            // classIndex 0 = column B (column number 2)
+            // classIndex 25 = column AA (column number 27) 
+            // classIndex 26 = column AB (column number 28)
+            // classIndex 27 = column AC (column number 29)
+    
+            // Wait, if you're saying index 26 should be AC (not AB), then:
+            // classIndex 0 = column B
+            // classIndex 26 = column AC (which would be column 29)
+            // That means we need: columnNumber = classIndex + 2
+    
+            const columnNumber = classIndex + 2; // Start at column B (2)
             let columnLetter;
-            const columnNumber = classIndex + 2; // +2 because B=2 in spreadsheets (A=1, B=2, C=3, etc.)
     
             if (columnNumber <= 26) {
-                // Single letter columns: A-Z (but we start at B, so B-Z)
-                columnLetter = String.fromCharCode(64 + columnNumber); // A=65, but we use 64+columnNumber
+                // Single letter columns (B through Z)
+                columnLetter = String.fromCharCode(64 + columnNumber);
             } else {
-                // Double letter columns: AA, AB, AC, etc.
-                const firstLetter = String.fromCharCode(64 + Math.floor((columnNumber - 1) / 26));
-                const secondLetter = String.fromCharCode(65 + ((columnNumber - 1) % 26));
-                columnLetter = firstLetter + secondLetter;
+                // For columns AA and beyond:
+                // Column 27 = AA
+                // Column 28 = AB  
+                // Column 29 = AC
+                // The pattern is: first letter = floor((n-1)/26), second = ((n-1) mod 26) + 1
+        
+                const firstLetterNum = Math.floor((columnNumber - 1) / 26);
+                const secondLetterNum = ((columnNumber - 1) % 26) + 1;
+                columnLetter = String.fromCharCode(64 + firstLetterNum) + String.fromCharCode(64 + secondLetterNum);
             }
     
-            console.log(`Class "${className}" is at index ${classIndex}, column ${columnLetter}`);
+            console.log(`Class "${className}" is at index ${classIndex}, column number ${columnNumber}, column letter ${columnLetter}`);
     
             try {
                 const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}300`);
