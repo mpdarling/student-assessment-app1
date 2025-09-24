@@ -677,45 +677,62 @@
             });
         }
         
-        // Submit assessment
+        // Replace your submitAssessment function with this version:
+
         async function submitAssessment() {
             const attributeItems = document.querySelectorAll('.attribute-item');
             const checkedAttributes = [];
-            
-            attributeItems.forEach((item, index) => {
+    
+            // For each attribute item (in order), either include its text or an empty string
+            attributeItems.forEach((item) => {
                 if (item.classList.contains('checked')) {
-                    checkedAttributes[index] = appData.skillAttributes[index];
+                    // Get the actual text of this specific attribute
+                    const attributeText = item.querySelector('.attribute-text').textContent;
+                    checkedAttributes.push(attributeText);
                 } else {
-                    checkedAttributes[index] = '';
+                    // Not checked - push empty string to maintain position
+                    checkedAttributes.push('');
                 }
             });
-            
+    
+            // If there are fewer than 10 attributes for this skill, pad with empty strings
+            // This ensures columns C through L are always filled (even if empty)
+            while (checkedAttributes.length < 10) {
+                checkedAttributes.push('');
+            }
+    
+            // If somehow there are more than 10, trim to 10
+            if (checkedAttributes.length > 10) {
+                checkedAttributes.length = 10;
+            }
+    
             const assessmentData = {
                 teacher: appData.selectedTeacher,
                 student: appData.selectedStudent,
                 skill: appData.selectedSkill,
                 attributes: checkedAttributes
             };
-            
+    
             console.log('Submitting assessment:', assessmentData);
-            
+            console.log('Attributes array (10 elements):', checkedAttributes);
+    
             try {
                 // Save to Google Sheets
                 await submitToSheets(assessmentData);
-                
+        
                 // Clear checkboxes
                 attributeItems.forEach(item => {
                     item.classList.remove('checked');
                 });
-                
+        
                 // Reset student selection
                 document.getElementById('student-select').value = '';
                 appData.selectedStudent = '';
                 document.getElementById('submit-btn').disabled = true;
-                
+        
                 // Show success message
                 showSuccessPopup();
-                
+        
             } catch (error) {
                 alert('Error saving assessment: ' + error.message);
             }
