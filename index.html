@@ -350,24 +350,36 @@
                 
                 // Load students for each class
                 appData.students = {};
-                for (let i = 0; i < appData.classes.length && i < 100; i++) { // Limit to 20 classes max
+                for (let i = 0; i < appData.classes.length && i < 50; i++) { // Limit to 20 classes max
                     const className = appData.classes[i];
                     const columnLetter = String.fromCharCode(66 + i); // B, C, D, etc.
+                    
+                    console.log(`\n--- Processing class ${i}: "${className}" (column ${columnLetter}) ---`);
                     
                     try {
                         // Get students from row 3 down to row 100 in the class column
                         const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}300`);
-                        console.log(`Students data for ${className} (column ${columnLetter}):`, studentsData);
+                        console.log(`Raw students data for "${className}":`, studentsData);
                         
-                        appData.students[className] = studentsData.values ? 
+                        const studentList = studentsData.values ? 
                             studentsData.values.flat().filter(cell => cell && cell.toString().trim() !== '') : [];
                             
-                        console.log(`Final students for ${className}:`, appData.students[className]);
+                        console.log(`Processed student list for "${className}":`, studentList);
+                        console.log(`Student count: ${studentList.length}`);
+                        
+                        // Store using exact class name
+                        appData.students[className] = studentList;
+                        
                     } catch (error) {
-                        console.warn(`Failed to load students for ${className}:`, error);
+                        console.warn(`Failed to load students for "${className}":`, error);
                         appData.students[className] = [];
                     }
                 }
+                
+                console.log('\n--- Final student mapping ---');
+                Object.keys(appData.students).forEach(key => {
+                    console.log(`"${key}": ${appData.students[key].length} students`);
+                });
                 
                 console.log('Final app data:', appData);
                 
@@ -592,20 +604,34 @@
             attributesContainer.innerHTML = '';
             attributesContainer.style.display = 'block';
             
-            // Find which column the selected skill is in
+            // Find which column the selected skill is in (skills are in row 2: B2:K2)
             const skillIndex = appData.skills.indexOf(appData.selectedSkill);
             
-            if (skillIndex === -1 || !appData.skillAttributes[skillIndex]) {
+            if (skillIndex === -1) {
                 console.warn('No attributes found for skill:', appData.selectedSkill);
                 return;
             }
             
-            // Get the attributes for this specific skill (the corresponding row)
-            const skillSpecificAttributes = appData.skillAttributes[skillIndex].filter(cell => 
-                cell && cell.toString().trim() !== ''
-            );
+            console.log(`Selected skill "${appData.selectedSkill}" is at index ${skillIndex}`);
+            console.log('All skill attributes data:', appData.skillAttributes);
             
-            console.log(`Showing attributes for skill "${appData.selectedSkill}" (index ${skillIndex}):`, skillSpecificAttributes);
+            // Get all attributes for this skill column (all rows from B3:K12 for this column)
+            const skillSpecificAttributes = [];
+            
+            // Loop through all rows of attributes (should be 10 rows: B3:K12)
+            for (let rowIndex = 0; rowIndex < appData.skillAttributes.length; rowIndex++) {
+                const row = appData.skillAttributes[rowIndex];
+                if (row && row[skillIndex] && row[skillIndex].toString().trim() !== '') {
+                    skillSpecificAttributes.push(row[skillIndex]);
+                }
+            }
+            
+            console.log(`Attributes for skill "${appData.selectedSkill}":`, skillSpecificAttributes);
+            
+            if (skillSpecificAttributes.length === 0) {
+                console.warn('No attributes found for this skill');
+                return;
+            }
             
             skillSpecificAttributes.forEach((attribute, index) => {
                 const item = document.createElement('div');
