@@ -207,19 +207,20 @@
 
         // Submit assessment to Google Apps Script Web App (JSON, no no-cors)
         async function submitToSheets(assessmentData) {
-            const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzea1BxqlQOUfVQyEerFmo--KvbZdlTujAsm4EcYdqdmAnkCCVa_DyhFWCDWcm-O7XjnQ/exec'; // update if you re-deployed
+            const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzea1BxqlQOUfVQyEerFmo--KvbZdlTujAsm4EcYdqdmAnkCCVa_DyhFWCDWcm-O7XjnQ/exec'; // keep this if it’s your current /exec
 
-            const res = await fetch(WEB_APP_URL, {
+            // no-cors => opaque response; we can’t read it, but Apps Script receives the data
+            await fetch(WEB_APP_URL, {
                 method: 'POST',
+                mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(assessmentData)
             });
 
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Save failed');
+            // Assume success (since we can’t inspect the opaque response)
             return { success: true };
         }
+
 
         // Populate dropdown menus
         function populateDropdowns() {
