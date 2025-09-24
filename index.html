@@ -207,7 +207,7 @@
 
         // Submit assessment to Google Apps Script Web App (JSON, no no-cors)
         async function submitToSheets(assessmentData) {
-            const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzea1BxqlQOUfVQyEerFmo--KvbZdlTujAsm4EcYdqdmAnkCCVa_DyhFWCDWcm-O7XjnQ/exec'; // keep this if it’s your current /exec
+            const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby8G-nKDETxEvQveNEHdkTi-41UHCMCAnaCCQjZF-Vc-j_n7HW51_uOvxASxc2l8GC6_w/exec'; // keep this if it’s your current /exec
 
             // no-cors => opaque response; we can’t read it, but Apps Script receives the data
             await fetch(WEB_APP_URL, {
