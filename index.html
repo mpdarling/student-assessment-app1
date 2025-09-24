@@ -1,473 +1,450 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Assessment">
-    <title>Student Assessment App</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 400px; margin: 0 auto; background: white; border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; min-height: calc(100vh - 40px);
-        }
-        .header { background: #2563eb; color: white; padding: 30px 20px; text-align: center; }
-        .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
-        .header p { opacity: 0.9; font-size: 14px; }
-        .content { padding: 30px 20px; }
-        .screen { display: none; }
-        .screen.active { display: block; }
-        .question { margin-bottom: 25px; }
-        .question-label { display: block; font-weight: 600; color: #1e40af; margin-bottom: 8px; font-size: 16px; }
-        select {
-            width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; background: white; transition: border-color 0.2s;
-        }
-        select:focus { outline: none; border-color: #2563eb; }
-        .btn {
-            width: 100%; padding: 16px; background: #2563eb; color: white; border: none; border-radius: 12px; font-size: 18px;
-            font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 20px;
-        }
-        .btn:hover { background: #1d4ed8; }
-        .btn:disabled { background: #9ca3af; cursor: not-allowed; }
-        .skill-attributes { margin-top: 25px; }
-        .attribute-item {
-            display: flex; align-items: center; padding: 12px; margin: 8px 0; border-radius: 12px; cursor: pointer; transition: all 0.2s;
-            background: #fef2f2; border: 2px solid #fca5a5;
-        }
-        .attribute-item.checked { background: #f0fdf4; border-color: #4ade80; }
-        .attribute-checkbox {
-            width: 20px; height: 20px; border-radius: 6px; border: 2px solid #fca5a5; background: white; margin-right: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-        }
-        .attribute-item.checked .attribute-checkbox { background: #4ade80; border-color: #4ade80; }
-        .attribute-checkbox::after { content: '✓'; color: white; font-weight: bold; opacity: 0; transition: opacity 0.2s; }
-        .attribute-item.checked .attribute-checkbox::after { opacity: 1; }
-        .attribute-text { flex: 1; font-weight: 500; }
-        .loading { text-align: center; padding: 40px 20px; color: #6b7280; }
-        .error { background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626; padding: 12px; border-radius: 8px; margin: 10px 0; }
-        .success-popup {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 1000; text-align: center; display: none;
-        }
-        .success-popup.show { display: block; }
-        .success-popup h3 { color: #059669; margin-bottom: 10px; }
-        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; display: none; }
-        .overlay.show { display: block; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Assessment" />
+  <title>Student Assessment App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh; padding: 20px;
+    }
+    .container { max-width: 400px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; min-height: calc(100vh - 40px); }
+    .header { background: #2563eb; color: white; padding: 30px 20px; text-align: center; position: relative; }
+    .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    .header p { opacity: 0.9; font-size: 14px; }
+    .content { padding: 30px 20px; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+    }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .question { margin-bottom: 18px; }
+    .question-label { display: block; font-weight: 600; color: #1e40af; margin-bottom: 8px; font-size: 16px; }
+    select {
+      width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; background: white; transition: border-color 0.2s;
+    }
+    select:focus { outline: none; border-color: #2563eb; }
+    .btn {
+      padding: 10px 14px; background: #2563eb; color: white; border: none; border-radius: 10px; font-size: 14px;
+      font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .btn:hover { background: #1d4ed8; }
+    .btn.secondary { background: #6b7280; }
+    .btn.secondary:hover { background: #4b5563; }
+    .btn.block { width: 100%; padding: 16px; border-radius: 12px; font-size: 18px; margin-top: 20px; }
+    .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    .skill-attributes { margin-top: 18px; }
+    .attribute-item {
+      display: flex; align-items: center; padding: 12px; margin: 8px 0; border-radius: 12px; cursor: pointer; transition: all 0.2s;
+      background: #fef2f2; border: 2px solid #fca5a5;
+    }
+    .attribute-item.checked { background: #f0fdf4; border-color: #4ade80; }
+    .attribute-checkbox {
+      width: 20px; height: 20px; border-radius: 6px; border: 2px solid #fca5a5; background: white; margin-right: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .attribute-item.checked .attribute-checkbox { background: #4ade80; border-color: #4ade80; }
+    .attribute-checkbox::after { content: '✓'; color: white; font-weight: bold; opacity: 0; transition: opacity 0.2s; }
+    .attribute-item.checked .attribute-checkbox::after { opacity: 1; }
+    .attribute-text { flex: 1; font-weight: 500; }
+    .loading { text-align: center; padding: 40px 20px; color: #6b7280; }
+    .error { background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626; padding: 12px; border-radius: 8px; margin: 10px 0; }
+    .success-popup {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 1000; text-align: center; display: none;
+    }
+    .success-popup.show { display: block; }
+    .success-popup h3 { color: #059669; margin-bottom: 10px; }
+    .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; display: none; }
+    .overlay.show { display: block; }
+    .roster-label { font-size: 14px; color: #374151; margin: -6px 0 10px 0; }
+    .actions-inline { display: flex; gap: 8px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Student Assessment</h1>
-            <p>Evaluate student skills and progress</p>
-        </div>
-
-        <div class="content">
-            <!-- Loading Screen -->
-            <div id="loading-screen" class="screen active">
-                <div class="loading">
-                    <p>Loading data from spreadsheet...</p>
-                    <div id="error-message" class="error" style="display: none;"></div>
-                </div>
-            </div>
-
-            <!-- Screen 1: Teacher and Class Selection -->
-            <div id="screen1" class="screen">
-                <div class="question">
-                    <label class="question-label">Who are you?</label>
-                    <select id="teacher-select">
-                        <option value="">Select a teacher...</option>
-                    </select>
-                </div>
-
-                <div class="question">
-                    <label class="question-label">Which group do you want to assess?</label>
-                    <select id="class-select">
-                        <option value="">Select a class...</option>
-                    </select>
-                </div>
-
-                <button class="btn" id="next-btn" disabled>Next</button>
-            </div>
-
-            <!-- Screen 2: Assessment Screen -->
-            <div id="screen2" class="screen">
-                <div class="question">
-                    <label class="question-label">Skill</label>
-                    <select id="skill-select">
-                        <option value="">Select a skill...</option>
-                    </select>
-                </div>
-
-                <div class="question">
-                    <label class="question-label">Student</label>
-                    <select id="student-select">
-                        <option value="">Select a student...</option>
-                    </select>
-                </div>
-
-                <div id="skill-attributes" class="skill-attributes" style="display: none;">
-                    <!-- Skill attributes will be populated here -->
-                </div>
-
-                <button class="btn" id="submit-btn" disabled>Submit Score</button>
-            </div>
-        </div>
+  <div class="container">
+    <div class="header">
+      <h1>Student Assessment</h1>
+      <p>Evaluate student skills and progress</p>
     </div>
 
-    <!-- Success Popup -->
-    <div class="overlay" id="overlay"></div>
-    <div class="success-popup" id="success-popup">
-        <h3>✅ Scores Saved</h3>
-        <p>Choose a new student</p>
+    <div class="content">
+      <!-- Loading Screen -->
+      <div id="loading-screen" class="screen active">
+        <div class="loading">
+          <p>Loading data from spreadsheet...</p>
+          <div id="error-message" class="error" style="display: none;"></div>
+        </div>
+      </div>
+
+      <!-- Screen 1: Teacher and Class Selection -->
+      <div id="screen1" class="screen">
+        <div class="topbar">
+          <div></div>
+          <button class="btn secondary" id="refresh-btn-1" title="Reload app">Refresh</button>
+        </div>
+
+        <div class="question">
+          <label class="question-label">Who are you?</label>
+          <select id="teacher-select">
+            <option value="">Select a teacher...</option>
+          </select>
+        </div>
+
+        <div class="question">
+          <label class="question-label">Which group (roster) do you want to assess?</label>
+          <select id="class-select">
+            <option value="">Select a class...</option>
+          </select>
+        </div>
+
+        <button class="btn block" id="next-btn" disabled>Next</button>
+      </div>
+
+      <!-- Screen 2: Assessment Screen -->
+      <div id="screen2" class="screen">
+        <div class="topbar">
+          <div class="actions-inline">
+            <button class="btn secondary" id="back-btn" title="Go back">Back</button>
+          </div>
+          <button class="btn secondary" id="refresh-btn-2" title="Reload app">Refresh</button>
+        </div>
+
+        <div class="question">
+          <label class="question-label">Skill</label>
+          <select id="skill-select">
+            <option value="">Select a skill...</option>
+          </select>
+        </div>
+
+        <div class="question">
+          <div class="roster-label" id="roster-name" style="display:none;"></div>
+          <label class="question-label">Student</label>
+          <select id="student-select">
+            <option value="">Select a student...</option>
+          </select>
+        </div>
+
+        <div id="skill-attributes" class="skill-attributes" style="display: none;">
+          <!-- Skill attributes will be populated here -->
+        </div>
+
+        <button class="btn block" id="submit-btn" disabled>Submit Score</button>
+      </div>
     </div>
+  </div>
 
-    <script>
-        // Configuration
-        const SHEET_ID = '1vAemqH6f60Ly16e7fdMTDCbDudnY1xfu3IUXnMo6m0w';
-        const API_KEY = 'AIzaSyA3a5pz0sW2vL3-fLj-zH7o7xY2sXQcYD8';
+  <!-- Success Popup -->
+  <div class="overlay" id="overlay"></div>
+  <div class="success-popup" id="success-popup">
+    <h3>✅ Scores Saved</h3>
+    <p>Choose a new student</p>
+  </div>
 
-        // App state
-        let appData = {
-            teachers: [],
-            classes: [],
-            skills: [],
-            skillAttributes: [],
-            students: {},
-            selectedTeacher: '',
-            selectedClass: '',
-            selectedSkill: '',
-            selectedStudent: ''
-        };
+  <script>
+    // ========= CONFIG =========
+    const SHEET_ID = '1vAemqH6f60Ly16e7fdMTDCbDudnY1xfu3IUXnMo6m0w';
+    const API_KEY  = 'AIzaSyA3a5pz0sW2vL3-fLj-zH7o7xY2sXQcYD8';
+    // Your current Web App /exec URL:
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxbhpCMDMMhLpEXsj-jZOt4M4jyk6gpIskO_pCdE1kZGlRt5w4GM94k8xoi5LR10n8Qrg/exec';
 
-        // Initialize app
-        async function initApp() {
-            try {
-                await loadSheetData();
-                populateDropdowns();
-                showScreen('screen1');
-            } catch (error) {
-                showError('Failed to load data: ' + error.toString());
-                console.error('Error initializing app:', error);
-            }
+    // ========= APP STATE =========
+    let appData = {
+      teachers: [],
+      classes: [],
+      skills: [],
+      skillAttributes: [],
+      students: {},
+      selectedTeacher: '',
+      selectedClass: '',
+      selectedSkill: '',
+      selectedStudent: ''
+    };
+
+    // ========= INIT =========
+    document.addEventListener('DOMContentLoaded', () => {
+      initApp();
+
+      // Refresh buttons (both screens)
+      document.getElementById('refresh-btn-1').addEventListener('click', () => window.location.reload());
+      document.getElementById('refresh-btn-2').addEventListener('click', () => window.location.reload());
+
+      // Back button (screen 2)
+      document.getElementById('back-btn').addEventListener('click', () => {
+        showScreen('screen1');
+      });
+
+      // Screen 1
+      const teacherSelect = document.getElementById('teacher-select');
+      const classSelect = document.getElementById('class-select');
+      const nextBtn = document.getElementById('next-btn');
+
+      function checkScreen1Complete() {
+        nextBtn.disabled = !(teacherSelect.value !== '' && classSelect.value !== '');
+      }
+
+      teacherSelect.addEventListener('change', e => {
+        appData.selectedTeacher = e.target.value;
+        checkScreen1Complete();
+      });
+
+      classSelect.addEventListener('change', e => {
+        appData.selectedClass = e.target.value;
+        checkScreen1Complete();
+      });
+
+      nextBtn.addEventListener('click', async () => {
+        await populateStudents();
+        updateRosterLabel();
+        showScreen('screen2');
+      });
+
+      // Screen 2
+      const skillSelect = document.getElementById('skill-select');
+      const studentSelect = document.getElementById('student-select');
+      const submitBtn = document.getElementById('submit-btn');
+
+      function checkScreen2Complete() {
+        submitBtn.disabled = !(skillSelect.value !== '' && studentSelect.value !== '');
+      }
+
+      skillSelect.addEventListener('change', e => {
+        appData.selectedSkill = e.target.value;
+        if (e.target.value) showSkillAttributes();
+        checkScreen2Complete();
+      });
+
+      studentSelect.addEventListener('change', e => {
+        appData.selectedStudent = e.target.value;
+        checkScreen2Complete();
+      });
+
+      submitBtn.addEventListener('click', submitAssessment);
+    });
+
+    async function initApp() {
+      try {
+        await loadSheetData();
+        populateDropdowns();
+        showScreen('loading-screen'); // show during transition
+        showScreen('screen1');
+      } catch (error) {
+        showError('Failed to load data: ' + error.toString());
+        console.error('Error initializing app:', error);
+      }
+    }
+
+    // ========= LOAD DATA (public Sheets API) =========
+    async function fetchSheetRange(sheetName, range) {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Sheets API error ${response.status}: ${text}`);
+      }
+      return await response.json();
+    }
+
+    async function loadSheetData() {
+      const teachersData = await fetchSheetRange('List Builders', 'B1:BF1');
+      const classesData  = await fetchSheetRange('Group Builder', 'B1:BF1');
+      const skillsData   = await fetchSheetRange('Survey Sender', 'B2:K2');
+      const attrsData    = await fetchSheetRange('Survey Sender', 'B3:K12');
+
+      appData.teachers = teachersData.values?.[0]?.filter(x => x && String(x).trim() !== '') || [];
+      appData.classes  = classesData.values?.[0]?.filter(x => x && String(x).trim() !== '') || [];
+      appData.skills   = skillsData.values?.[0]?.filter(x => x && String(x).trim() !== '') || [];
+      appData.skillAttributes = attrsData.values || [];
+      appData.students = {};
+    }
+
+    // ========= WRITE (no-cors) =========
+    async function submitToSheets(assessmentData) {
+      await fetch(WEB_APP_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assessmentData)
+      });
+      return { success: true };
+    }
+
+    // ========= UI HELPERS =========
+    function populateDropdowns() {
+      const teacherSelect = document.getElementById('teacher-select');
+      const classSelect   = document.getElementById('class-select');
+      const skillSelect   = document.getElementById('skill-select');
+
+      teacherSelect.innerHTML = '<option value="">Select a teacher...</option>';
+      classSelect.innerHTML   = '<option value="">Select a class...</option>';
+      skillSelect.innerHTML   = '<option value="">Select a skill...</option>';
+
+      appData.teachers.forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v; teacherSelect.appendChild(o);
+      });
+      appData.classes.forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v; classSelect.appendChild(o);
+      });
+      appData.skills.forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v; skillSelect.appendChild(o);
+      });
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function showError(message) {
+      const el = document.getElementById('error-message');
+      el.textContent = message;
+      el.style.display = 'block';
+    }
+
+    function showSuccessPopup() {
+      document.getElementById('overlay').classList.add('show');
+      document.getElementById('success-popup').classList.add('show');
+      setTimeout(() => {
+        document.getElementById('overlay').classList.remove('show');
+        document.getElementById('success-popup').classList.remove('show');
+      }, 2000);
+    }
+
+    function updateRosterLabel() {
+      const el = document.getElementById('roster-name');
+      if (appData.selectedClass) {
+        el.textContent = `Roster: ${appData.selectedClass}`;
+        el.style.display = 'block';
+      } else {
+        el.style.display = 'none';
+      }
+    }
+
+    // ========= STUDENTS BY CLASS =========
+    async function loadStudentsForClass(className) {
+      if (appData.students[className]) return appData.students[className];
+
+      const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
+      const allColumns = headerData.values?.[0] || [];
+
+      let actualColumnIndex = -1;
+      for (let i = 0; i < allColumns.length; i++) {
+        if (allColumns[i] && allColumns[i].toString().trim() === className) {
+          actualColumnIndex = i; break;
         }
+      }
+      if (actualColumnIndex === -1) return [];
 
-        // Load data from Google Sheets
-        async function loadSheetData() {
-            try {
-                // Load basic data
-                const teachersData = await fetchSheetRange('List Builders', 'B1:BF1');
-                const classesData = await fetchSheetRange('Group Builder', 'B1:BF1');
-                const skillsData = await fetchSheetRange('Survey Sender', 'B2:K2');
-                const skillAttributesData = await fetchSheetRange('Survey Sender', 'B3:K12');
+      const colNumber = actualColumnIndex + 2; // B=2
+      const toA1 = (n) => { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
+      const colLetter = toA1(colNumber);
 
-                // Process teachers
-                appData.teachers = teachersData.values && teachersData.values[0]
-                    ? teachersData.values[0].filter(cell => cell && cell.toString().trim() !== '')
-                    : [];
+      const studentsData = await fetchSheetRange('Group Builder', `${colLetter}3:${colLetter}300`);
+      const list = studentsData.values ? studentsData.values.flat().filter(v => v && String(v).trim() !== '') : [];
+      appData.students[className] = list;
+      return list;
+    }
 
-                // Process classes
-                appData.classes = classesData.values && classesData.values[0]
-                    ? classesData.values[0].filter(cell => cell && cell.toString().trim() !== '')
-                    : [];
-
-                // Process skills
-                appData.skills = skillsData.values && skillsData.values[0]
-                    ? skillsData.values[0].filter(cell => cell && cell.toString().trim() !== '')
-                    : [];
-
-                // Skill attributes (B3:K12 = 10 rows x up to 10 cols)
-                appData.skillAttributes = skillAttributesData.values ? skillAttributesData.values : [];
-
-                // Initialize empty students object - will be populated on-demand
-                appData.students = {};
-            } catch (error) {
-                console.error('Error loading from sheets:', error);
-                throw error;
-            }
+    async function populateStudents() {
+      const studentSelect = document.getElementById('student-select');
+      studentSelect.innerHTML = '<option value="">Loading students...</option>';
+      try {
+        const students = await loadStudentsForClass(appData.selectedClass);
+        studentSelect.innerHTML = '<option value="">Select a student...</option>';
+        if (students.length === 0) {
+          const o = document.createElement('option');
+          o.value = ''; o.textContent = 'No students found'; o.disabled = true; studentSelect.appendChild(o);
+          return;
         }
-
-        // Fetch data from Google Sheets (public read with API key)
-        async function fetchSheetRange(sheetName, range) {
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
-            const response = await fetch(url);
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to fetch data: ${response.status} ${response.statusText} - ${errorText}`);
-            }
-            return await response.json();
-        }
-
-        // Submit assessment to Google Apps Script Web App (JSON, no no-cors)
-        async function submitToSheets(assessmentData) {
-            const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby8G-nKDETxEvQveNEHdkTi-41UHCMCAnaCCQjZF-Vc-j_n7HW51_uOvxASxc2l8GC6_w/exec'; // keep this if it’s your current /exec
-
-            // no-cors => opaque response; we can’t read it, but Apps Script receives the data
-            await fetch(WEB_APP_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(assessmentData)
-            });
-
-            // Assume success (since we can’t inspect the opaque response)
-            return { success: true };
-        }
-
-
-        // Populate dropdown menus
-        function populateDropdowns() {
-            const teacherSelect = document.getElementById('teacher-select');
-            const classSelect = document.getElementById('class-select');
-            const skillSelect = document.getElementById('skill-select');
-
-            teacherSelect.innerHTML = '<option value="">Select a teacher...</option>';
-            classSelect.innerHTML = '<option value="">Select a class...</option>';
-            skillSelect.innerHTML = '<option value="">Select a skill...</option>';
-
-            appData.teachers.forEach(teacher => {
-                const option = document.createElement('option');
-                option.value = teacher;
-                option.textContent = teacher;
-                teacherSelect.appendChild(option);
-            });
-
-            appData.classes.forEach(className => {
-                const option = document.createElement('option');
-                option.value = className;
-                option.textContent = className;
-                classSelect.appendChild(option);
-            });
-
-            appData.skills.forEach(skill => {
-                const option = document.createElement('option');
-                option.value = skill;
-                option.textContent = skill;
-                skillSelect.appendChild(option);
-            });
-        }
-
-        // Show specific screen
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-        }
-
-        // Show error message
-        function showError(message) {
-            const errorDiv = document.getElementById('error-message');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-
-        // Success popup
-        function showSuccessPopup() {
-            document.getElementById('overlay').classList.add('show');
-            document.getElementById('success-popup').classList.add('show');
-            setTimeout(hideSuccessPopup, 2000);
-        }
-        function hideSuccessPopup() {
-            document.getElementById('overlay').classList.remove('show');
-            document.getElementById('success-popup').classList.remove('show');
-        }
-
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            initApp();
-
-            // Screen 1
-            const teacherSelect = document.getElementById('teacher-select');
-            const classSelect = document.getElementById('class-select');
-            const nextBtn = document.getElementById('next-btn');
-
-            function checkScreen1Complete() {
-                nextBtn.disabled = !(teacherSelect.value !== '' && classSelect.value !== '');
-            }
-
-            teacherSelect.addEventListener('change', e => {
-                appData.selectedTeacher = e.target.value;
-                checkScreen1Complete();
-            });
-
-            classSelect.addEventListener('change', e => {
-                appData.selectedClass = e.target.value;
-                checkScreen1Complete();
-            });
-
-            nextBtn.addEventListener('click', async () => {
-                await populateStudents();
-                showScreen('screen2');
-            });
-
-            // Screen 2
-            const skillSelect = document.getElementById('skill-select');
-            const studentSelect = document.getElementById('student-select');
-            const submitBtn = document.getElementById('submit-btn');
-
-            function checkScreen2Complete() {
-                submitBtn.disabled = !(skillSelect.value !== '' && studentSelect.value !== '');
-            }
-
-            skillSelect.addEventListener('change', e => {
-                appData.selectedSkill = e.target.value;
-                if (e.target.value) showSkillAttributes();
-                checkScreen2Complete();
-            });
-
-            studentSelect.addEventListener('change', e => {
-                appData.selectedStudent = e.target.value;
-                checkScreen2Complete();
-            });
-
-            submitBtn.addEventListener('click', submitAssessment);
+        students.forEach(s => {
+          const o = document.createElement('option'); o.value = s; o.textContent = s; studentSelect.appendChild(o);
         });
+      } catch (err) {
+        console.error(err);
+        studentSelect.innerHTML = '<option value="">Error loading students</option>';
+      }
+    }
 
-        // Load students for selected class (header lookup + A1 column math)
-        async function loadStudentsForClass(className) {
-            if (appData.students[className]) {
-                return appData.students[className];
-            }
-            const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
-            const allColumns = headerData.values ? headerData.values[0] : [];
-            let actualColumnIndex = -1;
-            for (let i = 0; i < allColumns.length; i++) {
-                if (allColumns[i] && allColumns[i].toString().trim() === className) {
-                    actualColumnIndex = i; break;
-                }
-            }
-            if (actualColumnIndex === -1) return [];
+    // ========= SKILL ATTRIBUTES =========
+    function showSkillAttributes() {
+      const c = document.getElementById('skill-attributes');
+      c.innerHTML = '';
+      c.style.display = 'block';
 
-            const columnNumber = actualColumnIndex + 2; // B = 2
-            function toA1(num) {
-                let s = '';
-                while (num > 0) {
-                    const m = (num - 1) % 26;
-                    s = String.fromCharCode(65 + m) + s;
-                    num = Math.floor((num - 1) / 26);
-                }
-                return s;
-            }
-            const columnLetter = toA1(columnNumber);
+      const skillIndex = appData.skills.indexOf(appData.selectedSkill);
+      if (skillIndex === -1) return;
 
-            const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}300`);
-            const studentList = studentsData.values
-              ? studentsData.values.flat().filter(cell => cell && cell.toString().trim() !== '')
-              : [];
-            appData.students[className] = studentList;
-            return studentList;
+      const rows = appData.skillAttributes || [];
+      const col = Array.from({ length: 10 }, (_, r) => {
+        const row = rows[r] || [];
+        return (row[skillIndex] || '').toString().trim();
+      });
+
+      col.forEach((attribute, index) => {
+        const item = document.createElement('div');
+        item.className = 'attribute-item';
+        item.dataset.index = index;
+        item.innerHTML = `
+          <div class="attribute-checkbox"></div>
+          <div class="attribute-text">${attribute || `<em>—</em>`}</div>
+        `;
+        item.addEventListener('click', () => {
+          if (!attribute) return; // ignore blanks
+          item.classList.toggle('checked');
+        });
+        c.appendChild(item);
+      });
+    }
+
+    // ========= SUBMIT =========
+    async function submitAssessment() {
+      const attributeItems = document.querySelectorAll('.attribute-item');
+      const checkedAttributes = [];
+
+      attributeItems.forEach(item => {
+        if (item.classList.contains('checked')) {
+          const attributeText = item.querySelector('.attribute-text').textContent;
+          checkedAttributes.push(attributeText);
+        } else {
+          checkedAttributes.push('');
         }
+      });
 
-        // Populate students dropdown
-        async function populateStudents() {
-            const studentSelect = document.getElementById('student-select');
-            studentSelect.innerHTML = '<option value="">Loading students...</option>';
-            try {
-                const students = await loadStudentsForClass(appData.selectedClass);
-                studentSelect.innerHTML = '<option value="">Select a student...</option>';
-                if (students.length === 0) {
-                    const option = document.createElement('option');
-                    option.value = '';
-                    option.textContent = 'No students found';
-                    option.disabled = true;
-                    studentSelect.appendChild(option);
-                    return;
-                }
-                students.forEach(student => {
-                    const option = document.createElement('option');
-                    option.value = student;
-                    option.textContent = student;
-                    studentSelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Error loading students:', error);
-                studentSelect.innerHTML = '<option value="">Error loading students</option>';
-            }
-        }
+      while (checkedAttributes.length < 10) checkedAttributes.push('');
+      if (checkedAttributes.length > 10) checkedAttributes.length = 10;
 
-        // Show skill attributes (exactly 10 rows if present)
-        function showSkillAttributes() {
-            const attributesContainer = document.getElementById('skill-attributes');
-            attributesContainer.innerHTML = '';
-            attributesContainer.style.display = 'block';
+      const assessmentData = {
+        teacher: appData.selectedTeacher,
+        student: appData.selectedStudent,
+        skill: appData.selectedSkill, // now stored server-side as column C
+        attributes: checkedAttributes
+      };
 
-            const skillIndex = appData.skills.indexOf(appData.selectedSkill);
-            if (skillIndex === -1) return;
+      const submitBtn = document.getElementById('submit-btn');
+      try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving…';
+        await submitToSheets(assessmentData);
 
-            const rows = appData.skillAttributes || [];
-            const col = Array.from({ length: 10 }, (_, r) => {
-                const row = rows[r] || [];
-                return (row[skillIndex] || '').toString().trim();
-            });
+        // Clear checkboxes and reset student
+        attributeItems.forEach(item => item.classList.remove('checked'));
+        document.getElementById('student-select').value = '';
+        appData.selectedStudent = '';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submit Score';
 
-            col.forEach((attribute, index) => {
-                const item = document.createElement('div');
-                item.className = 'attribute-item';
-                item.dataset.index = index;
-                item.innerHTML = `
-                    <div class="attribute-checkbox"></div>
-                    <div class="attribute-text">${attribute || `<em>—</em>`}</div>
-                `;
-                item.addEventListener('click', () => {
-                    if (!attribute) return; // don't select blanks
-                    item.classList.toggle('checked');
-                });
-                attributesContainer.appendChild(item);
-            });
-        }
-
-        // Submit assessment
-        async function submitAssessment() {
-            const attributeItems = document.querySelectorAll('.attribute-item');
-            const checkedAttributes = [];
-
-            attributeItems.forEach((item) => {
-                if (item.classList.contains('checked')) {
-                    const attributeText = item.querySelector('.attribute-text').textContent;
-                    checkedAttributes.push(attributeText);
-                } else {
-                    checkedAttributes.push('');
-                }
-            });
-
-            while (checkedAttributes.length < 10) checkedAttributes.push('');
-            if (checkedAttributes.length > 10) checkedAttributes.length = 10;
-
-            const assessmentData = {
-                teacher: appData.selectedTeacher,
-                student: appData.selectedStudent,
-                skill: appData.selectedSkill, // not stored server-side (OK to include)
-                attributes: checkedAttributes
-            };
-
-            const submitBtn = document.getElementById('submit-btn');
-            try {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Saving…';
-                await submitToSheets(assessmentData);
-
-                // Clear checkboxes
-                attributeItems.forEach(item => item.classList.remove('checked'));
-
-                // Reset student selection
-                document.getElementById('student-select').value = '';
-                appData.selectedStudent = '';
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Submit Score';
-
-                showSuccessPopup();
-            } catch (error) {
-                submitBtn.textContent = 'Submit Score';
-                showError('Error saving assessment: ' + error.message);
-            }
-        }
-    </script>
+        showSuccessPopup();
+      } catch (error) {
+        submitBtn.textContent = 'Submit Score';
+        showError('Error saving assessment: ' + error.message);
+      }
+    }
+  </script>
 </body>
 </html>
 
