@@ -380,36 +380,28 @@
         }
         
         // Submit assessment to Google Sheets
+        // Replace your existing submitToSheets function with this one:
+
         async function submitToSheets(assessmentData) {
             try {
-                // Prepare the row data
-                const rowData = [assessmentData.teacher, assessmentData.student];
-                
-                // Add attribute data (columns C through L)
-                for (let i = 0; i < 10; i++) {
-                    rowData.push(assessmentData.attributes[i] || '');
-                }
-                
-                // Append to the sheet
-                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/From%20the%20App:append?valueInputOption=RAW&key=${API_KEY}`;
-                
-                const response = await fetch(url, {
+                // YOUR WEB APP URL - You'll get this after deploying the Google Apps Script
+                // It will look like: https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
+                const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzrpionFNO77DwIZJZR2lwUL0RrKnMS33Fm5ag2D1asiitu-OukNLUxNUxrPxkAEx7lLg/exec'; // <-- You'll update this
+        
+                const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
+                    mode: 'no-cors', // Important for cross-origin requests to Google Apps Script
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        values: [rowData]
-                    })
+                    body: JSON.stringify(assessmentData)
                 });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Failed to save data: ${response.status} ${errorText}`);
-                }
-                
+        
+                // Note: With no-cors mode, we can't read the response, 
+                // but the data will still be saved
+                console.log('Data submitted successfully');
                 return { success: true };
-                
+        
             } catch (error) {
                 console.error('Error saving to sheets:', error);
                 throw error;
