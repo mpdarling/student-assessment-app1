@@ -533,8 +533,8 @@
         
         // Replace your loadStudentsForClass function with this corrected version:
 
-        // Replace your loadStudentsForClass function with this corrected version:
-
+       // Replace your entire loadStudentsForClass function with this version:
+        
         async function loadStudentsForClass(className) {
             // Check if we already have the students for this class
             if (appData.students[className]) {
@@ -544,45 +544,50 @@
     
             console.log(`Loading students for class: "${className}"`);
     
-            // Find which column this class is in
-            const classIndex = appData.classes.indexOf(className);
-            if (classIndex === -1) {
-                console.error(`Class "${className}" not found in class list`);
-                return [];
-            }
+            // Instead of using the index from the filtered class list,
+            // we need to find the actual column position in the original data
+            // This requires us to store the original column positions
     
-            // Calculate column letter
-            // classIndex 0 = column B (column number 2)
-            // classIndex 25 = column AA (column number 27) 
-            // classIndex 26 = column AB (column number 28)
-            // classIndex 27 = column AC (column number 29)
-    
-            // Wait, if you're saying index 26 should be AC (not AB), then:
-            // classIndex 0 = column B
-            // classIndex 26 = column AC (which would be column 29)
-            // That means we need: columnNumber = classIndex + 2
-    
-            const columnNumber = classIndex + 2; // Start at column B (2)
-            let columnLetter;
-    
-            if (columnNumber <= 26) {
-                // Single letter columns (B through Z)
-                columnLetter = String.fromCharCode(64 + columnNumber);
-            } else {
-                // For columns AA and beyond:
-                // Column 27 = AA
-                // Column 28 = AB  
-                // Column 29 = AC
-                // The pattern is: first letter = floor((n-1)/26), second = ((n-1) mod 26) + 1
-        
-                const firstLetterNum = Math.floor((columnNumber - 1) / 26);
-                const secondLetterNum = ((columnNumber - 1) % 26) + 1;
-                columnLetter = String.fromCharCode(64 + firstLetterNum) + String.fromCharCode(64 + secondLetterNum);
-            }
-    
-            console.log(`Class "${className}" is at index ${classIndex}, column number ${columnNumber}, column letter ${columnLetter}`);
-    
+            // First, let's find the actual column by searching the raw data
             try {
+                // Fetch the raw header row to find the exact column
+                const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
+                const allColumns = headerData.values ? headerData.values[0] : [];
+        
+                // Find the exact column index (including empty cells)
+                let actualColumnIndex = -1;
+                for (let i = 0; i < allColumns.length; i++) {
+                    if (allColumns[i] && allColumns[i].toString().trim() === className) {
+                        actualColumnIndex = i;
+                        break;
+                    }
+                }
+        
+                if (actualColumnIndex === -1) {
+                    console.error(`Class "${className}" not found in Group Builder headers`);
+                    return [];
+                }
+        
+                // Calculate the column letter based on the actual position
+                // actualColumnIndex 0 = column B (2)
+                // actualColumnIndex 1 = column C (3)
+                // etc.
+                const columnNumber = actualColumnIndex + 2; // +2 because we start at column B
+                let columnLetter;
+        
+                if (columnNumber <= 26) {
+                    // Single letter columns (A-Z)
+                    columnLetter = String.fromCharCode(64 + columnNumber);
+                } else {
+                    // Double letter columns (AA, AB, AC, etc.)
+                    const firstLetterNum = Math.floor((columnNumber - 1) / 26);
+                    const secondLetterNum = (columnNumber - 1) % 26;
+                    columnLetter = String.fromCharCode(64 + firstLetterNum) + String.fromCharCode(65 + secondLetterNum);
+                }
+        
+                console.log(`Class "${className}" found at actual column index ${actualColumnIndex}, column ${columnLetter}`);
+        
+                // Now fetch the students from the correct column
                 const studentsData = await fetchSheetRange('Group Builder', `${columnLetter}3:${columnLetter}300`);
                 console.log(`Raw student data:`, studentsData);
         
