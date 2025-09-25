@@ -52,6 +52,7 @@
     .overlay.show { display: block; }
     .roster-label { font-size: 14px; color: #374151; margin: -2px 0 10px 0; }
     .inline-actions { display: flex; gap: 8px; }
+
     /* Multi-select dropdown */
     .ms-wrapper { position: relative; }
     .ms-button { display: flex; align-items: center; justify-content: space-between; }
@@ -63,7 +64,7 @@
     .ms-item { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
     .ms-item:hover { background: #f3f4f6; }
     .ms-item.selected { background: #eff6ff; }
-    .ms-count { font-size: 12px; margin-left: 10px; }
+    .ms-count { font-size: 12px; margin-left: 10px; color: #6b7280; }
     .ms-item.zero .ms-name { color: #111827; font-weight: 600; } /* 0 = black/high priority */
     .ms-item.nonzero .ms-name { color: #6b7280; }                /* 1+ = grey/lower priority */
     .selected-list { margin-top: 8px; }
@@ -180,9 +181,6 @@
 
     // ===== UTIL =====
     const isOnline = () => navigator.onLine;
-    const show = id => document.getElementById(id).classList.add('active');
-    const hide = id => document.getElementById(id).classList.remove('active');
-
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
@@ -209,11 +207,7 @@
 
     // ===== CACHE =====
     function loadCache() {
-      try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (!raw) return null;
-        return JSON.parse(raw);
-      } catch { return null; }
+      try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch { return null; }
     }
     function saveCache(obj) {
       try { localStorage.setItem(CACHE_KEY, JSON.stringify(obj)); } catch {}
@@ -262,15 +256,18 @@
 
     async function fetchCountsFor(teacher, skill, students) {
       if (!teacher || !skill || !students?.length) return {};
-      const params = {
-        fn: 'counts',
-        teacher,
-        skill,
-        students: students.join('|'),
-      };
-      const data = await jsonp(WEB_APP_URL, params);
-      if (!data || !data.ok) return {};
-      return data.counts || {};
+      try {
+        const data = await jsonp(WEB_APP_URL, {
+          fn: 'counts',
+          teacher,
+          skill,
+          students: students.join('|'),
+        });
+        if (!data || !data.ok) return {};
+        return data.counts || {};
+      } catch {
+        return {};
+      }
     }
 
     // ===== SHEETS READS (public API) =====
@@ -282,25 +279,14 @@
     }
 
     // ===== WRITES (queue-aware) =====
-    function loadQueue() {
-      try {
-        return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
-      } catch { return []; }
-    }
-    function saveQueue(arr) {
-      try { localStorage.setItem(QUEUE_KEY, JSON.stringify(arr)); } catch {}
-    }
+    function loadQueue()  { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; } }
+    function saveQueue(a) { try { localStorage.setItem(QUEUE_KEY, JSON.stringify(a)); } catch {} }
 
     async function submitToSheets(assessmentData) {
-      // If offline, queue and return
       if (!isOnline()) {
-        const q = loadQueue();
-        q.push(assessmentData);
-        saveQueue(q);
+        const q = loadQueue(); q.push(assessmentData); saveQueue(q);
         return { success: true, queued: true };
       }
-
-      // Try direct send (no-cors; assume success if request doesn't throw)
       try {
         await fetch(WEB_APP_URL, {
           method: 'POST',
@@ -309,11 +295,8 @@
           body: JSON.stringify(assessmentData),
         });
         return { success: true };
-      } catch (err) {
-        // Network error -> queue it
-        const q = loadQueue();
-        q.push(assessmentData);
-        saveQueue(q);
+      } catch {
+        const q = loadQueue(); q.push(assessmentData); saveQueue(q);
         return { success: true, queued: true };
       }
     }
@@ -331,29 +314,26 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(item),
           });
-          // assume success
         } catch {
-          remaining.push(item); // keep if network error
+          remaining.push(item);
         }
       }
       saveQueue(remaining);
     }
 
-    // ===== APP STARTUP =====
+    // ===== STARTUP =====
     document.addEventListener('DOMContentLoaded', () => {
       setOfflineBanner();
       initApp();
 
-      // UI: Refresh
+      // Refresh buttons
       document.getElementById('refresh-btn-1').addEventListener('click', () => manualRefresh());
       document.getElementById('refresh-btn-2').addEventListener('click', () => manualRefresh());
 
-      // UI: Back
-      document.getElementById('back-btn').addEventListener('click', () => {
-        showScreen('screen1');
-      });
+      // Back button
+      document.getElementById('back-btn').addEventListener('click', () => showScreen('screen1'));
 
-      // Screen 1
+      // Screen 1 handlers
       const teacherSelect = document.getElementById('teacher-select');
       const classSelect   = document.getElementById('class-select');
       const nextBtn       = document.getElementById('next-btn');
@@ -367,41 +347,43 @@
       nextBtn.addEventListener('click', async () => {
         await ensureStudentsForClass(state.selectedClass);
         updateRosterLabel();
-        await refreshCountsAndRender(); // counts for this class + current (maybe empty) skill
+        await refreshCountsAndRender();
         showScreen('screen2');
         checkScreen2Complete();
       });
 
-      // Screen 2
-      const skillSelect  = document.getElementById('skill-select');
-      const submitBtn    = document.getElementById('submit-btn');
-
-      function checkScreen2Complete() {
-        submitBtn.disabled = !(state.selectedSkill && state.selectedStudents.size > 0);
-      }
-
+      // Screen 2 handlers
+      const skillSelect = document.getElementById('skill-select');
       skillSelect.addEventListener('change', async (e) => {
         state.selectedSkill = e.target.value;
         showSkillAttributes();
-        await refreshCountsAndRender(); // depends on teacher + skill
+        await refreshCountsAndRender();
         checkScreen2Complete();
       });
 
-      // Multi-select open/close
+      // Multi-select open/close with suppression so it stays open on clicks
+      let suppressCloseOnce = false;
       const msButton = document.getElementById('ms-button');
       const msPanel  = document.getElementById('ms-panel');
-      msButton.addEventListener('click', () => msPanel.classList.toggle('show'));
+
+      msButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        msPanel.classList.toggle('show');
+      });
       document.addEventListener('click', (e) => {
+        if (suppressCloseOnce) { suppressCloseOnce = false; return; }
         if (!msPanel.contains(e.target) && e.target !== msButton) msPanel.classList.remove('show');
       });
 
-      submitBtn.addEventListener('click', submitAssessment);
+      // expose suppression + re-render flag to item clicks
+      window._ms_keepOpen = () => { suppressCloseOnce = true; };
+
+      document.getElementById('submit-btn').addEventListener('click', submitAssessment);
     });
 
     async function initApp() {
       showScreen('loading-screen');
 
-      // Try online refresh if needed; else load cache
       let cache = loadCache();
       const needOnline = !cache || cacheIsStale(cache);
 
@@ -417,18 +399,17 @@
       populateDropdowns();
       showScreen('screen1');
 
-      // When we come online next time, refresh once per day automatically
-      if (needOnline === false && cacheIsStale(loadCache()) && isOnline()) {
+      // auto refresh once per day when back online
+      if (!needOnline && cacheIsStale(loadCache()) && isOnline()) {
         await refreshAllDataOnline();
         populateDropdowns();
       }
 
-      // Also try syncing any pending writes
       flushQueue();
     }
 
     async function manualRefresh() {
-      if (!isOnline()) return; // only works when online
+      if (!isOnline()) return;
       await refreshAllDataOnline(true);
       populateDropdowns();
       if (state.selectedClass) {
@@ -445,6 +426,7 @@
       state.studentsByClass = cache.studentsByClass || {};
     }
 
+    // Prefetch ALL rosters' students when online so offline lists work
     async function refreshAllDataOnline(force=false) {
       const teachersData = await fetchSheetRange('List Builders', 'B1:BF1');
       const classesData  = await fetchSheetRange('Group Builder', 'B1:BF1');
@@ -456,44 +438,57 @@
       state.skills          = skillsData.values?.[0]?.filter(v => v && String(v).trim() !== '') || [];
       state.skillAttributes = attrsData.values || [];
 
+      // Prefetch students for ALL classes
+      state.studentsByClass = {};
+      const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
+      const headers = headerData.values?.[0] || [];
+      const toA1 = (n) => { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
+
+      for (const className of state.classes) {
+        const idx = headers.findIndex(h => h && String(h).trim() === className);
+        if (idx === -1) { state.studentsByClass[className] = []; continue; }
+        const colLetter = toA1(idx + 2); // B=2
+        const studentsData = await fetchSheetRange('Group Builder', `${colLetter}3:${colLetter}300`);
+        const list = studentsData.values ? studentsData.values.flat().filter(v => v && String(v).trim() !== '') : [];
+        state.studentsByClass[className] = list;
+      }
+
       saveCache({
         timestamp: new Date().toISOString(),
         teachers: state.teachers,
         classes: state.classes,
         skills: state.skills,
         skillAttributes: state.skillAttributes,
-        studentsByClass: loadCache()?.studentsByClass || {}, // keep existing class caches
+        studentsByClass: state.studentsByClass,
       });
     }
 
     async function ensureStudentsForClass(className, force=false) {
-      const cache = loadCache() || {};
-      const sbc   = cache.studentsByClass || {};
-      if (!force && sbc[className]?.length) {
-        state.studentsByClass[className] = sbc[className];
+      const cache = loadCache();
+      const cachedList = cache?.studentsByClass?.[className];
+
+      if (!force && Array.isArray(cachedList) && cachedList.length) {
+        state.studentsByClass[className] = cachedList;
         return;
       }
-      // Online fetch
-      if (!isOnline()) return; // offline, keep whatever we have
 
-      // Find column letter for class
+      if (!isOnline()) {
+        state.studentsByClass[className] = cachedList || [];
+        return;
+      }
+
+      // Online fetch for one class + update cache
       const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
       const allColumns = headerData.values?.[0] || [];
-      let idx = -1;
-      for (let i = 0; i < allColumns.length; i++) {
-        if (allColumns[i] && allColumns[i].toString().trim() === className) { idx = i; break; }
-      }
+      const idx = allColumns.findIndex(h => h && String(h).trim() === className);
       if (idx === -1) { state.studentsByClass[className] = []; return; }
 
-      const colNumber = idx + 2; // B=2
       const toA1 = (n) => { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
-      const colLetter = toA1(colNumber);
-
+      const colLetter = toA1(idx + 2);
       const studentsData = await fetchSheetRange('Group Builder', `${colLetter}3:${colLetter}300`);
       const list = studentsData.values ? studentsData.values.flat().filter(v => v && String(v).trim() !== '') : [];
       state.studentsByClass[className] = list;
 
-      // save into cache
       const newCache = loadCache() || { studentsByClass: {} };
       newCache.studentsByClass = newCache.studentsByClass || {};
       newCache.studentsByClass[className] = list;
@@ -531,7 +526,7 @@
       }
     }
 
-    // ===== Skill attributes =====
+    // Show skill attributes
     function showSkillAttributes() {
       const c = document.getElementById('skill-attributes');
       c.innerHTML = '';
@@ -562,34 +557,55 @@
       });
     }
 
-    // ===== Multi-select students (with counts) =====
-    function renderStudentMultiselect() {
+    // Multi-select (with counts)
+    function renderStudentMultiselect(keepOpen = false) {
       const panel = document.getElementById('ms-panel');
       const btn   = document.getElementById('ms-button');
       const list  = state.studentsByClass[state.selectedClass] || [];
       panel.innerHTML = '';
 
+      if (list.length === 0) {
+        panel.innerHTML = `<div class="ms-item" style="color:#6b7280;">
+          ${isOnline() ? 'No students found for this roster.' : 'No cached students for this roster (offline). Go online and press Refresh.'}
+        </div>`;
+        btn.textContent = 'Select students…';
+        if (keepOpen) panel.classList.add('show');
+        return;
+      }
+
       list.forEach(name => {
         const count = state.counts[name] || 0;
         const item = document.createElement('div');
-        item.className = 'ms-item ' + (state.selectedStudents.has(name) ? 'selected ' : '') + (count === 0 ? 'zero' : 'nonzero');
+        item.className =
+          'ms-item ' +
+          (state.selectedStudents.has(name) ? 'selected ' : '') +
+          (count === 0 ? 'zero' : 'nonzero');
+
         item.innerHTML = `
           <div class="ms-name">${name}</div>
           <div class="ms-count">(${count})</div>
         `;
-        item.addEventListener('click', () => {
+
+        // Keep panel open after each selection
+        item.addEventListener('click', (ev) => {
+          ev.stopPropagation();
           if (state.selectedStudents.has(name)) state.selectedStudents.delete(name);
           else state.selectedStudents.add(name);
-          renderStudentMultiselect();
+
+          window._ms_keepOpen();             // one-shot suppression for the document click handler
+          renderStudentMultiselect(true);    // re-render AND keep open
           renderSelectedList();
           checkScreen2Complete();
         });
+
         panel.appendChild(item);
       });
 
       // Update button label
       const n = state.selectedStudents.size;
       btn.textContent = n ? `${n} selected` : 'Select students…';
+
+      if (keepOpen) panel.classList.add('show');
     }
 
     function renderSelectedList() {
@@ -605,7 +621,7 @@
         `;
         row.querySelector('.remove-link').addEventListener('click', () => {
           state.selectedStudents.delete(name);
-          renderStudentMultiselect();
+          renderStudentMultiselect(true);
           renderSelectedList();
           checkScreen2Complete();
         });
@@ -616,17 +632,25 @@
     async function refreshCountsAndRender(force=false) {
       const cls = state.selectedClass;
       const list = state.studentsByClass[cls] || [];
+
       if (!state.selectedTeacher || !state.selectedSkill || list.length === 0) {
         state.counts = {};
         renderStudentMultiselect();
         renderSelectedList();
         return;
       }
+
+      if (!isOnline()) {
+        state.counts = {};
+        renderStudentMultiselect();
+        renderSelectedList();
+        return;
+      }
+
       try {
         state.counts = await fetchCountsFor(state.selectedTeacher, state.selectedSkill, list);
-      } catch {
-        state.counts = {};
-      }
+      } catch { state.counts = {}; }
+
       renderStudentMultiselect();
       renderSelectedList();
     }
@@ -636,7 +660,7 @@
       submitBtn.disabled = !(state.selectedSkill && state.selectedStudents.size > 0);
     }
 
-    // ===== Submit =====
+    // Submit
     async function submitAssessment() {
       const attributeItems = document.querySelectorAll('.attribute-item');
       const checkedAttributes = [];
@@ -655,7 +679,6 @@
       submitBtn.disabled = true;
       submitBtn.textContent = isOnline() ? 'Saving…' : 'Saving (queued)…';
 
-      // One row per selected student
       const students = [...state.selectedStudents];
       for (const student of students) {
         const payload = {
@@ -665,14 +688,11 @@
           attributes: checkedAttributes
         };
         await submitToSheets(payload);
-
-        // Optimistically update counts in UI
-        state.counts[student] = (state.counts[student] || 0) + 1;
+        state.counts[student] = (state.counts[student] || 0) + 1; // optimistic
       }
 
-      // Clear selections but keep roster/skill
       state.selectedStudents.clear();
-      renderStudentMultiselect();
+      renderStudentMultiselect(true);
       renderSelectedList();
       checkScreen2Complete();
 
