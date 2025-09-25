@@ -696,6 +696,9 @@
       renderSelectedList();
       checkScreen2Complete();
 
+      // NEW: clear the attribute checkboxes so they're reset for next student(s)
+      document.querySelectorAll('.attribute-item.checked').forEach(el => el.classList.remove('checked'));
+
       submitBtn.textContent = 'Submit Score';
       showSuccessPopup();
     }
