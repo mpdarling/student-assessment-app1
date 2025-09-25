@@ -14,56 +14,61 @@
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh; padding: 20px;
     }
-    .container { max-width: 400px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; min-height: calc(100vh - 40px); }
-    .header { background: #2563eb; color: white; padding: 30px 20px; text-align: center; position: relative; }
-    .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
-    .header p { opacity: 0.9; font-size: 14px; }
-    .content { padding: 30px 20px; }
-    .topbar {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
-    }
+    .container { max-width: 420px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; min-height: calc(100vh - 40px); }
+    .header { background: #2563eb; color: white; padding: 16px 20px; text-align: center; position: relative; }
+    .header h1 { font-size: 22px; font-weight: 700; }
+    .header p { opacity: 0.95; font-size: 13px; }
+    .offline-banner { margin-top: 8px; background: #f59e0b; color: #111827; font-weight: 600; padding: 6px 10px; border-radius: 10px; display: none; }
+    .content { padding: 24px 18px 28px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .screen { display: none; }
     .screen.active { display: block; }
-    .question { margin-bottom: 18px; }
-    .question-label { display: block; font-weight: 600; color: #1e40af; margin-bottom: 8px; font-size: 16px; }
-    select {
-      width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; background: white; transition: border-color 0.2s;
+    .question { margin-bottom: 16px; }
+    .question-label { display: block; font-weight: 700; color: #1e40af; margin-bottom: 6px; font-size: 15px; }
+    select, .selectlike {
+      width: 100%; padding: 12px 14px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; background: white; transition: border-color 0.2s; cursor: pointer;
     }
-    select:focus { outline: none; border-color: #2563eb; }
-    .btn {
-      padding: 10px 14px; background: #2563eb; color: white; border: none; border-radius: 10px; font-size: 14px;
-      font-weight: 600; cursor: pointer; transition: background 0.2s;
-    }
+    select:focus, .selectlike:focus { outline: none; border-color: #2563eb; }
+    .btn { padding: 10px 14px; background: #2563eb; color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
     .btn:hover { background: #1d4ed8; }
     .btn.secondary { background: #6b7280; }
     .btn.secondary:hover { background: #4b5563; }
-    .btn.block { width: 100%; padding: 16px; border-radius: 12px; font-size: 18px; margin-top: 20px; }
+    .btn.block { width: 100%; padding: 16px; border-radius: 12px; font-size: 18px; margin-top: 16px; }
     .btn:disabled { background: #9ca3af; cursor: not-allowed; }
-    .skill-attributes { margin-top: 18px; }
-    .attribute-item {
-      display: flex; align-items: center; padding: 12px; margin: 8px 0; border-radius: 12px; cursor: pointer; transition: all 0.2s;
-      background: #fef2f2; border: 2px solid #fca5a5;
-    }
+    .skill-attributes { margin-top: 12px; }
+    .attribute-item { display: flex; align-items: center; padding: 10px; margin: 6px 0; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: #fef2f2; border: 2px solid #fca5a5; }
     .attribute-item.checked { background: #f0fdf4; border-color: #4ade80; }
-    .attribute-checkbox {
-      width: 20px; height: 20px; border-radius: 6px; border: 2px solid #fca5a5; background: white; margin-right: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-    }
+    .attribute-checkbox { width: 18px; height: 18px; border-radius: 6px; border: 2px solid #fca5a5; background: white; margin-right: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
     .attribute-item.checked .attribute-checkbox { background: #4ade80; border-color: #4ade80; }
-    .attribute-checkbox::after { content: '✓'; color: white; font-weight: bold; opacity: 0; transition: opacity 0.2s; }
+    .attribute-checkbox::after { content: '✓'; color: white; font-weight: 700; opacity: 0; transition: opacity 0.2s; font-size: 12px; }
     .attribute-item.checked .attribute-checkbox::after { opacity: 1; }
     .attribute-text { flex: 1; font-weight: 500; }
-    .loading { text-align: center; padding: 40px 20px; color: #6b7280; }
+    .loading { text-align: center; padding: 32px 20px; color: #6b7280; }
     .error { background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626; padding: 12px; border-radius: 8px; margin: 10px 0; }
-    .success-popup {
-      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 16px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 1000; text-align: center; display: none;
-    }
+    .success-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 26px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 1000; text-align: center; display: none; }
     .success-popup.show { display: block; }
-    .success-popup h3 { color: #059669; margin-bottom: 10px; }
+    .success-popup h3 { color: #059669; margin-bottom: 8px; }
     .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; display: none; }
     .overlay.show { display: block; }
-    .roster-label { font-size: 14px; color: #374151; margin: -6px 0 10px 0; }
-    .actions-inline { display: flex; gap: 8px; }
+    .roster-label { font-size: 14px; color: #374151; margin: -2px 0 10px 0; }
+    .inline-actions { display: flex; gap: 8px; }
+    /* Multi-select dropdown */
+    .ms-wrapper { position: relative; }
+    .ms-button { display: flex; align-items: center; justify-content: space-between; }
+    .ms-panel {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: #fff; border: 2px solid #e5e7eb;
+      border-radius: 12px; box-shadow: 0 10px 24px rgba(0,0,0,0.12); max-height: 260px; overflow: auto; z-index: 30; display: none;
+    }
+    .ms-panel.show { display: block; }
+    .ms-item { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .ms-item:hover { background: #f3f4f6; }
+    .ms-item.selected { background: #eff6ff; }
+    .ms-count { font-size: 12px; margin-left: 10px; }
+    .ms-item.zero .ms-name { color: #111827; font-weight: 600; } /* 0 = black/high priority */
+    .ms-item.nonzero .ms-name { color: #6b7280; }                /* 1+ = grey/lower priority */
+    .selected-list { margin-top: 8px; }
+    .selected-row { padding: 6px 8px; border: 1px dashed #e5e7eb; border-radius: 8px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+    .remove-link { color: #2563eb; font-weight: 700; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -71,6 +76,7 @@
     <div class="header">
       <h1>Student Assessment</h1>
       <p>Evaluate student skills and progress</p>
+      <div class="offline-banner" id="offline-banner">Offline Mode</div>
     </div>
 
     <div class="content">
@@ -78,15 +84,15 @@
       <div id="loading-screen" class="screen active">
         <div class="loading">
           <p>Loading data from spreadsheet...</p>
-          <div id="error-message" class="error" style="display: none;"></div>
+          <div id="error-message" class="error" style="display:none;"></div>
         </div>
       </div>
 
-      <!-- Screen 1: Teacher and Class Selection -->
+      <!-- Screen 1 -->
       <div id="screen1" class="screen">
         <div class="topbar">
           <div></div>
-          <button class="btn secondary" id="refresh-btn-1" title="Reload app">Refresh</button>
+          <button class="btn secondary" id="refresh-btn-1">Refresh</button>
         </div>
 
         <div class="question">
@@ -106,13 +112,13 @@
         <button class="btn block" id="next-btn" disabled>Next</button>
       </div>
 
-      <!-- Screen 2: Assessment Screen -->
+      <!-- Screen 2 -->
       <div id="screen2" class="screen">
         <div class="topbar">
-          <div class="actions-inline">
-            <button class="btn secondary" id="back-btn" title="Go back">Back</button>
+          <div class="inline-actions">
+            <button class="btn secondary" id="back-btn">Back</button>
           </div>
-          <button class="btn secondary" id="refresh-btn-2" title="Reload app">Refresh</button>
+          <button class="btn secondary" id="refresh-btn-2">Refresh</button>
         </div>
 
         <div class="question">
@@ -124,15 +130,17 @@
 
         <div class="question">
           <div class="roster-label" id="roster-name" style="display:none;"></div>
-          <label class="question-label">Student</label>
-          <select id="student-select">
-            <option value="">Select a student...</option>
-          </select>
+
+          <!-- Multi-select student control -->
+          <label class="question-label">Students</label>
+          <div class="ms-wrapper">
+            <div class="selectlike ms-button" id="ms-button">Select students…</div>
+            <div class="ms-panel" id="ms-panel"></div>
+          </div>
+          <div class="selected-list" id="selected-list"></div>
         </div>
 
-        <div id="skill-attributes" class="skill-attributes" style="display: none;">
-          <!-- Skill attributes will be populated here -->
-        </div>
+        <div id="skill-attributes" class="skill-attributes" style="display:none;"></div>
 
         <button class="btn block" id="submit-btn" disabled>Submit Score</button>
       </div>
@@ -143,138 +151,356 @@
   <div class="overlay" id="overlay"></div>
   <div class="success-popup" id="success-popup">
     <h3>✅ Scores Saved</h3>
-    <p>Choose a new student</p>
+    <p>Choose new students or go back</p>
   </div>
 
   <script>
-    // ========= CONFIG =========
+    // ===== CONFIG =====
     const SHEET_ID = '1vAemqH6f60Ly16e7fdMTDCbDudnY1xfu3IUXnMo6m0w';
     const API_KEY  = 'AIzaSyA3a5pz0sW2vL3-fLj-zH7o7xY2sXQcYD8';
-    // Your current Web App /exec URL:
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxbhpCMDMMhLpEXsj-jZOt4M4jyk6gpIskO_pCdE1kZGlRt5w4GM94k8xoi5LR10n8Qrg/exec';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzF6X7wllWcBv6pf2Ne61Hnok3gOgGsUXipso29j-defAx0j4wH6StXdJygSOs6aloOyA/exec'; // e.g., https://script.google.com/macros/s/XXX/exec
 
-    // ========= APP STATE =========
-    let appData = {
+    // ===== OFFLINE + CACHE KEYS =====
+    const CACHE_KEY = 'assessment_app_cache_v1';
+    const QUEUE_KEY = 'assessment_app_queue_v1';
+
+    // ===== STATE =====
+    const state = {
       teachers: [],
       classes: [],
       skills: [],
       skillAttributes: [],
-      students: {},
+      studentsByClass: {}, // { className: [students...] }
       selectedTeacher: '',
       selectedClass: '',
       selectedSkill: '',
-      selectedStudent: ''
+      selectedStudents: new Set(),
+      counts: {}, // { studentName: number } for current teacher+skill
     };
 
-    // ========= INIT =========
+    // ===== UTIL =====
+    const isOnline = () => navigator.onLine;
+    const show = id => document.getElementById(id).classList.add('active');
+    const hide = id => document.getElementById(id).classList.remove('active');
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+    function showError(message) {
+      const el = document.getElementById('error-message');
+      el.textContent = message;
+      el.style.display = 'block';
+    }
+    function showSuccessPopup() {
+      document.getElementById('overlay').classList.add('show');
+      document.getElementById('success-popup').classList.add('show');
+      setTimeout(() => {
+        document.getElementById('overlay').classList.remove('show');
+        document.getElementById('success-popup').classList.remove('show');
+      }, 2000);
+    }
+    function setOfflineBanner() {
+      const b = document.getElementById('offline-banner');
+      b.style.display = isOnline() ? 'none' : 'inline-block';
+    }
+    window.addEventListener('online',  () => { setOfflineBanner(); flushQueue(); });
+    window.addEventListener('offline', () => { setOfflineBanner(); });
+
+    // ===== CACHE =====
+    function loadCache() {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch { return null; }
+    }
+    function saveCache(obj) {
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(obj)); } catch {}
+    }
+    function cacheIsStale(cache) {
+      if (!cache || !cache.timestamp) return true;
+      const then = new Date(cache.timestamp).getTime();
+      const now  = Date.now();
+      const ONE_DAY = 24 * 60 * 60 * 1000;
+      return (now - then) > ONE_DAY;
+    }
+
+    // ===== JSONP for counts (avoids CORS) =====
+    function jsonp(url, params = {}) {
+      return new Promise((resolve, reject) => {
+        const cbName = 'cb_' + Math.random().toString(36).slice(2);
+        params.callback = cbName;
+        const qs = Object.entries(params).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+        const script = document.createElement('script');
+        script.src = `${url}?${qs}`;
+        script.async = true;
+
+        let timeout = setTimeout(() => {
+          delete window[cbName];
+          script.remove();
+          reject(new Error('JSONP timeout'));
+        }, 12000);
+
+        window[cbName] = (data) => {
+          clearTimeout(timeout);
+          delete window[cbName];
+          script.remove();
+          resolve(data);
+        };
+
+        script.onerror = () => {
+          clearTimeout(timeout);
+          delete window[cbName];
+          script.remove();
+          reject(new Error('JSONP error'));
+        };
+
+        document.body.appendChild(script);
+      });
+    }
+
+    async function fetchCountsFor(teacher, skill, students) {
+      if (!teacher || !skill || !students?.length) return {};
+      const params = {
+        fn: 'counts',
+        teacher,
+        skill,
+        students: students.join('|'),
+      };
+      const data = await jsonp(WEB_APP_URL, params);
+      if (!data || !data.ok) return {};
+      return data.counts || {};
+    }
+
+    // ===== SHEETS READS (public API) =====
+    async function fetchSheetRange(sheetName, range) {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Sheets API ${res.status}`);
+      return await res.json();
+    }
+
+    // ===== WRITES (queue-aware) =====
+    function loadQueue() {
+      try {
+        return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+      } catch { return []; }
+    }
+    function saveQueue(arr) {
+      try { localStorage.setItem(QUEUE_KEY, JSON.stringify(arr)); } catch {}
+    }
+
+    async function submitToSheets(assessmentData) {
+      // If offline, queue and return
+      if (!isOnline()) {
+        const q = loadQueue();
+        q.push(assessmentData);
+        saveQueue(q);
+        return { success: true, queued: true };
+      }
+
+      // Try direct send (no-cors; assume success if request doesn't throw)
+      try {
+        await fetch(WEB_APP_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(assessmentData),
+        });
+        return { success: true };
+      } catch (err) {
+        // Network error -> queue it
+        const q = loadQueue();
+        q.push(assessmentData);
+        saveQueue(q);
+        return { success: true, queued: true };
+      }
+    }
+
+    async function flushQueue() {
+      if (!isOnline()) return;
+      let q = loadQueue();
+      if (!q.length) return;
+      const remaining = [];
+      for (const item of q) {
+        try {
+          await fetch(WEB_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item),
+          });
+          // assume success
+        } catch {
+          remaining.push(item); // keep if network error
+        }
+      }
+      saveQueue(remaining);
+    }
+
+    // ===== APP STARTUP =====
     document.addEventListener('DOMContentLoaded', () => {
+      setOfflineBanner();
       initApp();
 
-      // Refresh buttons (both screens)
-      document.getElementById('refresh-btn-1').addEventListener('click', () => window.location.reload());
-      document.getElementById('refresh-btn-2').addEventListener('click', () => window.location.reload());
+      // UI: Refresh
+      document.getElementById('refresh-btn-1').addEventListener('click', () => manualRefresh());
+      document.getElementById('refresh-btn-2').addEventListener('click', () => manualRefresh());
 
-      // Back button (screen 2)
+      // UI: Back
       document.getElementById('back-btn').addEventListener('click', () => {
         showScreen('screen1');
       });
 
       // Screen 1
       const teacherSelect = document.getElementById('teacher-select');
-      const classSelect = document.getElementById('class-select');
-      const nextBtn = document.getElementById('next-btn');
+      const classSelect   = document.getElementById('class-select');
+      const nextBtn       = document.getElementById('next-btn');
 
       function checkScreen1Complete() {
-        nextBtn.disabled = !(teacherSelect.value !== '' && classSelect.value !== '');
+        nextBtn.disabled = !(teacherSelect.value && classSelect.value);
       }
-
-      teacherSelect.addEventListener('change', e => {
-        appData.selectedTeacher = e.target.value;
-        checkScreen1Complete();
-      });
-
-      classSelect.addEventListener('change', e => {
-        appData.selectedClass = e.target.value;
-        checkScreen1Complete();
-      });
+      teacherSelect.addEventListener('change', e => { state.selectedTeacher = e.target.value; checkScreen1Complete(); });
+      classSelect.addEventListener('change',   e => { state.selectedClass   = e.target.value; checkScreen1Complete(); });
 
       nextBtn.addEventListener('click', async () => {
-        await populateStudents();
+        await ensureStudentsForClass(state.selectedClass);
         updateRosterLabel();
+        await refreshCountsAndRender(); // counts for this class + current (maybe empty) skill
         showScreen('screen2');
+        checkScreen2Complete();
       });
 
       // Screen 2
-      const skillSelect = document.getElementById('skill-select');
-      const studentSelect = document.getElementById('student-select');
-      const submitBtn = document.getElementById('submit-btn');
+      const skillSelect  = document.getElementById('skill-select');
+      const submitBtn    = document.getElementById('submit-btn');
 
       function checkScreen2Complete() {
-        submitBtn.disabled = !(skillSelect.value !== '' && studentSelect.value !== '');
+        submitBtn.disabled = !(state.selectedSkill && state.selectedStudents.size > 0);
       }
 
-      skillSelect.addEventListener('change', e => {
-        appData.selectedSkill = e.target.value;
-        if (e.target.value) showSkillAttributes();
+      skillSelect.addEventListener('change', async (e) => {
+        state.selectedSkill = e.target.value;
+        showSkillAttributes();
+        await refreshCountsAndRender(); // depends on teacher + skill
         checkScreen2Complete();
       });
 
-      studentSelect.addEventListener('change', e => {
-        appData.selectedStudent = e.target.value;
-        checkScreen2Complete();
+      // Multi-select open/close
+      const msButton = document.getElementById('ms-button');
+      const msPanel  = document.getElementById('ms-panel');
+      msButton.addEventListener('click', () => msPanel.classList.toggle('show'));
+      document.addEventListener('click', (e) => {
+        if (!msPanel.contains(e.target) && e.target !== msButton) msPanel.classList.remove('show');
       });
 
       submitBtn.addEventListener('click', submitAssessment);
     });
 
     async function initApp() {
-      try {
-        await loadSheetData();
+      showScreen('loading-screen');
+
+      // Try online refresh if needed; else load cache
+      let cache = loadCache();
+      const needOnline = !cache || cacheIsStale(cache);
+
+      if (needOnline && isOnline()) {
+        await refreshAllDataOnline();
+      } else if (cache) {
+        restoreFromCache(cache);
+      } else {
+        showError('No cached data and offline. Connect to the internet and press Refresh.');
+        return;
+      }
+
+      populateDropdowns();
+      showScreen('screen1');
+
+      // When we come online next time, refresh once per day automatically
+      if (needOnline === false && cacheIsStale(loadCache()) && isOnline()) {
+        await refreshAllDataOnline();
         populateDropdowns();
-        showScreen('loading-screen'); // show during transition
-        showScreen('screen1');
-      } catch (error) {
-        showError('Failed to load data: ' + error.toString());
-        console.error('Error initializing app:', error);
+      }
+
+      // Also try syncing any pending writes
+      flushQueue();
+    }
+
+    async function manualRefresh() {
+      if (!isOnline()) return; // only works when online
+      await refreshAllDataOnline(true);
+      populateDropdowns();
+      if (state.selectedClass) {
+        await ensureStudentsForClass(state.selectedClass, true);
+        await refreshCountsAndRender(true);
       }
     }
 
-    // ========= LOAD DATA (public Sheets API) =========
-    async function fetchSheetRange(sheetName, range) {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Sheets API error ${response.status}: ${text}`);
-      }
-      return await response.json();
+    function restoreFromCache(cache) {
+      state.teachers        = cache.teachers || [];
+      state.classes         = cache.classes || [];
+      state.skills          = cache.skills || [];
+      state.skillAttributes = cache.skillAttributes || [];
+      state.studentsByClass = cache.studentsByClass || {};
     }
 
-    async function loadSheetData() {
+    async function refreshAllDataOnline(force=false) {
       const teachersData = await fetchSheetRange('List Builders', 'B1:BF1');
       const classesData  = await fetchSheetRange('Group Builder', 'B1:BF1');
       const skillsData   = await fetchSheetRange('Survey Sender', 'B2:K2');
       const attrsData    = await fetchSheetRange('Survey Sender', 'B3:K12');
 
-      appData.teachers = teachersData.values?.[0]?.filter(x => x && String(x).trim() !== '') || [];
-      appData.classes  = classesData.values?.[0]?.filter(x => x && String(x).trim() !== '') || [];
-      appData.skills   = skillsData.values?.[0]?.filter(x => x && String(x).trim() !== '') || [];
-      appData.skillAttributes = attrsData.values || [];
-      appData.students = {};
-    }
+      state.teachers        = teachersData.values?.[0]?.filter(v => v && String(v).trim() !== '') || [];
+      state.classes         = classesData.values?.[0]?.filter(v => v && String(v).trim() !== '') || [];
+      state.skills          = skillsData.values?.[0]?.filter(v => v && String(v).trim() !== '') || [];
+      state.skillAttributes = attrsData.values || [];
 
-    // ========= WRITE (no-cors) =========
-    async function submitToSheets(assessmentData) {
-      await fetch(WEB_APP_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(assessmentData)
+      saveCache({
+        timestamp: new Date().toISOString(),
+        teachers: state.teachers,
+        classes: state.classes,
+        skills: state.skills,
+        skillAttributes: state.skillAttributes,
+        studentsByClass: loadCache()?.studentsByClass || {}, // keep existing class caches
       });
-      return { success: true };
     }
 
-    // ========= UI HELPERS =========
+    async function ensureStudentsForClass(className, force=false) {
+      const cache = loadCache() || {};
+      const sbc   = cache.studentsByClass || {};
+      if (!force && sbc[className]?.length) {
+        state.studentsByClass[className] = sbc[className];
+        return;
+      }
+      // Online fetch
+      if (!isOnline()) return; // offline, keep whatever we have
+
+      // Find column letter for class
+      const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
+      const allColumns = headerData.values?.[0] || [];
+      let idx = -1;
+      for (let i = 0; i < allColumns.length; i++) {
+        if (allColumns[i] && allColumns[i].toString().trim() === className) { idx = i; break; }
+      }
+      if (idx === -1) { state.studentsByClass[className] = []; return; }
+
+      const colNumber = idx + 2; // B=2
+      const toA1 = (n) => { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
+      const colLetter = toA1(colNumber);
+
+      const studentsData = await fetchSheetRange('Group Builder', `${colLetter}3:${colLetter}300`);
+      const list = studentsData.values ? studentsData.values.flat().filter(v => v && String(v).trim() !== '') : [];
+      state.studentsByClass[className] = list;
+
+      // save into cache
+      const newCache = loadCache() || { studentsByClass: {} };
+      newCache.studentsByClass = newCache.studentsByClass || {};
+      newCache.studentsByClass[className] = list;
+      newCache.timestamp = new Date().toISOString();
+      saveCache(newCache);
+    }
+
     function populateDropdowns() {
       const teacherSelect = document.getElementById('teacher-select');
       const classSelect   = document.getElementById('class-select');
@@ -284,105 +510,40 @@
       classSelect.innerHTML   = '<option value="">Select a class...</option>';
       skillSelect.innerHTML   = '<option value="">Select a skill...</option>';
 
-      appData.teachers.forEach(v => {
+      state.teachers.forEach(v => {
         const o = document.createElement('option'); o.value = v; o.textContent = v; teacherSelect.appendChild(o);
       });
-      appData.classes.forEach(v => {
+      state.classes.forEach(v => {
         const o = document.createElement('option'); o.value = v; o.textContent = v; classSelect.appendChild(o);
       });
-      appData.skills.forEach(v => {
+      state.skills.forEach(v => {
         const o = document.createElement('option'); o.value = v; o.textContent = v; skillSelect.appendChild(o);
       });
     }
 
-    function showScreen(id) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
-
-    function showError(message) {
-      const el = document.getElementById('error-message');
-      el.textContent = message;
-      el.style.display = 'block';
-    }
-
-    function showSuccessPopup() {
-      document.getElementById('overlay').classList.add('show');
-      document.getElementById('success-popup').classList.add('show');
-      setTimeout(() => {
-        document.getElementById('overlay').classList.remove('show');
-        document.getElementById('success-popup').classList.remove('show');
-      }, 2000);
-    }
-
     function updateRosterLabel() {
       const el = document.getElementById('roster-name');
-      if (appData.selectedClass) {
-        el.textContent = `Roster: ${appData.selectedClass}`;
+      if (state.selectedClass) {
+        el.textContent = `Roster: ${state.selectedClass}`;
         el.style.display = 'block';
       } else {
         el.style.display = 'none';
       }
     }
 
-    // ========= STUDENTS BY CLASS =========
-    async function loadStudentsForClass(className) {
-      if (appData.students[className]) return appData.students[className];
-
-      const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
-      const allColumns = headerData.values?.[0] || [];
-
-      let actualColumnIndex = -1;
-      for (let i = 0; i < allColumns.length; i++) {
-        if (allColumns[i] && allColumns[i].toString().trim() === className) {
-          actualColumnIndex = i; break;
-        }
-      }
-      if (actualColumnIndex === -1) return [];
-
-      const colNumber = actualColumnIndex + 2; // B=2
-      const toA1 = (n) => { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
-      const colLetter = toA1(colNumber);
-
-      const studentsData = await fetchSheetRange('Group Builder', `${colLetter}3:${colLetter}300`);
-      const list = studentsData.values ? studentsData.values.flat().filter(v => v && String(v).trim() !== '') : [];
-      appData.students[className] = list;
-      return list;
-    }
-
-    async function populateStudents() {
-      const studentSelect = document.getElementById('student-select');
-      studentSelect.innerHTML = '<option value="">Loading students...</option>';
-      try {
-        const students = await loadStudentsForClass(appData.selectedClass);
-        studentSelect.innerHTML = '<option value="">Select a student...</option>';
-        if (students.length === 0) {
-          const o = document.createElement('option');
-          o.value = ''; o.textContent = 'No students found'; o.disabled = true; studentSelect.appendChild(o);
-          return;
-        }
-        students.forEach(s => {
-          const o = document.createElement('option'); o.value = s; o.textContent = s; studentSelect.appendChild(o);
-        });
-      } catch (err) {
-        console.error(err);
-        studentSelect.innerHTML = '<option value="">Error loading students</option>';
-      }
-    }
-
-    // ========= SKILL ATTRIBUTES =========
+    // ===== Skill attributes =====
     function showSkillAttributes() {
       const c = document.getElementById('skill-attributes');
       c.innerHTML = '';
       c.style.display = 'block';
 
-      const skillIndex = appData.skills.indexOf(appData.selectedSkill);
-      if (skillIndex === -1) return;
+      const idx = state.skills.indexOf(state.selectedSkill);
+      if (idx === -1) return;
 
-      const rows = appData.skillAttributes || [];
+      const rows = state.skillAttributes || [];
       const col = Array.from({ length: 10 }, (_, r) => {
         const row = rows[r] || [];
-        return (row[skillIndex] || '').toString().trim();
+        return (row[idx] || '').toString().trim();
       });
 
       col.forEach((attribute, index) => {
@@ -394,57 +555,132 @@
           <div class="attribute-text">${attribute || `<em>—</em>`}</div>
         `;
         item.addEventListener('click', () => {
-          if (!attribute) return; // ignore blanks
+          if (!attribute) return;
           item.classList.toggle('checked');
         });
         c.appendChild(item);
       });
     }
 
-    // ========= SUBMIT =========
+    // ===== Multi-select students (with counts) =====
+    function renderStudentMultiselect() {
+      const panel = document.getElementById('ms-panel');
+      const btn   = document.getElementById('ms-button');
+      const list  = state.studentsByClass[state.selectedClass] || [];
+      panel.innerHTML = '';
+
+      list.forEach(name => {
+        const count = state.counts[name] || 0;
+        const item = document.createElement('div');
+        item.className = 'ms-item ' + (state.selectedStudents.has(name) ? 'selected ' : '') + (count === 0 ? 'zero' : 'nonzero');
+        item.innerHTML = `
+          <div class="ms-name">${name}</div>
+          <div class="ms-count">(${count})</div>
+        `;
+        item.addEventListener('click', () => {
+          if (state.selectedStudents.has(name)) state.selectedStudents.delete(name);
+          else state.selectedStudents.add(name);
+          renderStudentMultiselect();
+          renderSelectedList();
+          checkScreen2Complete();
+        });
+        panel.appendChild(item);
+      });
+
+      // Update button label
+      const n = state.selectedStudents.size;
+      btn.textContent = n ? `${n} selected` : 'Select students…';
+    }
+
+    function renderSelectedList() {
+      const wrap = document.getElementById('selected-list');
+      wrap.innerHTML = '';
+      if (!state.selectedStudents.size) return;
+      [...state.selectedStudents].forEach(name => {
+        const row = document.createElement('div');
+        row.className = 'selected-row';
+        row.innerHTML = `
+          <div>${name} <span style="color:#6b7280;">(${state.counts[name] || 0})</span></div>
+          <div class="remove-link">remove</div>
+        `;
+        row.querySelector('.remove-link').addEventListener('click', () => {
+          state.selectedStudents.delete(name);
+          renderStudentMultiselect();
+          renderSelectedList();
+          checkScreen2Complete();
+        });
+        wrap.appendChild(row);
+      });
+    }
+
+    async function refreshCountsAndRender(force=false) {
+      const cls = state.selectedClass;
+      const list = state.studentsByClass[cls] || [];
+      if (!state.selectedTeacher || !state.selectedSkill || list.length === 0) {
+        state.counts = {};
+        renderStudentMultiselect();
+        renderSelectedList();
+        return;
+      }
+      try {
+        state.counts = await fetchCountsFor(state.selectedTeacher, state.selectedSkill, list);
+      } catch {
+        state.counts = {};
+      }
+      renderStudentMultiselect();
+      renderSelectedList();
+    }
+
+    function checkScreen2Complete() {
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = !(state.selectedSkill && state.selectedStudents.size > 0);
+    }
+
+    // ===== Submit =====
     async function submitAssessment() {
       const attributeItems = document.querySelectorAll('.attribute-item');
       const checkedAttributes = [];
-
       attributeItems.forEach(item => {
         if (item.classList.contains('checked')) {
-          const attributeText = item.querySelector('.attribute-text').textContent;
-          checkedAttributes.push(attributeText);
+          const txt = item.querySelector('.attribute-text').textContent;
+          checkedAttributes.push(txt);
         } else {
           checkedAttributes.push('');
         }
       });
-
       while (checkedAttributes.length < 10) checkedAttributes.push('');
       if (checkedAttributes.length > 10) checkedAttributes.length = 10;
 
-      const assessmentData = {
-        teacher: appData.selectedTeacher,
-        student: appData.selectedStudent,
-        skill: appData.selectedSkill, // now stored server-side as column C
-        attributes: checkedAttributes
-      };
-
       const submitBtn = document.getElementById('submit-btn');
-      try {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Saving…';
-        await submitToSheets(assessmentData);
+      submitBtn.disabled = true;
+      submitBtn.textContent = isOnline() ? 'Saving…' : 'Saving (queued)…';
 
-        // Clear checkboxes and reset student
-        attributeItems.forEach(item => item.classList.remove('checked'));
-        document.getElementById('student-select').value = '';
-        appData.selectedStudent = '';
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Submit Score';
+      // One row per selected student
+      const students = [...state.selectedStudents];
+      for (const student of students) {
+        const payload = {
+          teacher: state.selectedTeacher,
+          student,
+          skill: state.selectedSkill,
+          attributes: checkedAttributes
+        };
+        await submitToSheets(payload);
 
-        showSuccessPopup();
-      } catch (error) {
-        submitBtn.textContent = 'Submit Score';
-        showError('Error saving assessment: ' + error.message);
+        // Optimistically update counts in UI
+        state.counts[student] = (state.counts[student] || 0) + 1;
       }
+
+      // Clear selections but keep roster/skill
+      state.selectedStudents.clear();
+      renderStudentMultiselect();
+      renderSelectedList();
+      checkScreen2Complete();
+
+      submitBtn.textContent = 'Submit Score';
+      showSuccessPopup();
     }
   </script>
 </body>
 </html>
+
 
