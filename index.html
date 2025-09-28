@@ -65,8 +65,8 @@
     .ms-item:hover { background: #f3f4f6; }
     .ms-item.selected { background: #eff6ff; }
     .ms-count { font-size: 12px; margin-left: 10px; color: #6b7280; }
-    .ms-item.zero .ms-name { color: #111827; font-weight: 600; } /* 0 = black/high priority */
-    .ms-item.nonzero .ms-name { color: #6b7280; }                /* 1+ = grey/lower priority */
+    .ms-item.zero .ms-name { color: #111827; font-weight: 600; }
+    .ms-item.nonzero .ms-name { color: #6b7280; }
     .selected-list { margin-top: 8px; }
     .selected-row { padding: 6px 8px; border: 1px dashed #e5e7eb; border-radius: 8px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
     .remove-link { color: #2563eb; font-weight: 700; cursor: pointer; }
@@ -194,24 +194,27 @@
   </div>
 
   <script>
-    // ====== CONFIG ======
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxFTEg_lTfwX9AevlUijS8enJH7jFxVH7kW7TN4ioyQcAeYVQl03qttbJag_FJWfHcw1g/exec'; // e.g., https://script.google.com/macros/s/xxx/exec
+    // ===== CONFIG =====
+    // Fetch this from the deployed Apps Script (so we don't hardcode an ID).
+    let SHEET_ID = '';
+    const API_KEY  = 'YOUR_GOOGLE_SHEETS_API_KEY_HERE';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby4po4t45sJuou9wJ0EmKOi7U7jbxYuS0Yze6WnxUY6XRBbnwivxFo0XNimyotSqbrtoQ/exec'; // https://script.google.com/macros/s/.../exec
 
-    // ====== STATE ======
+    // ===== STATE =====
     const state = {
       teachers: [],
       classes: [],
       skills: [],
-      skillAttributes: [],   // 10x10
-      studentsByClass: {},   // { class: [students...] }
+      skillAttributes: [],
+      studentsByClass: {}, // { className: [students...] }
       selectedTeacher: '',
       selectedClass: '',
       selectedSkill: '',
       selectedStudents: new Set(),
-      counts: {}
+      counts: {}, // { studentName: number }
     };
 
-    // ====== UTIL ======
+    // ===== UTIL =====
     const isOnline = () => navigator.onLine;
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -237,7 +240,7 @@
       b.style.display = isOnline() ? 'none' : 'inline-block';
     }
 
-    // ====== JSONP ======
+    // ===== JSONP for GETs to Apps Script (sheetid + counts) =====
     function jsonp(url, params = {}) {
       return new Promise((resolve, reject) => {
         const cbName = 'cb_' + Math.random().toString(36).slice(2);
@@ -271,6 +274,14 @@
       });
     }
 
+    async function ensureSheetId() {
+      if (SHEET_ID) return SHEET_ID;
+      const data = await jsonp(WEB_APP_URL, { fn: 'sheetid' });
+      if (!data || !data.ok || !data.id) throw new Error('Could not fetch Sheet ID');
+      SHEET_ID = data.id;
+      return SHEET_ID;
+    }
+
     async function fetchCountsFor(teacher, skill, students) {
       if (!teacher || !skill || !students?.length) return {};
       try {
@@ -287,7 +298,30 @@
       }
     }
 
-    // ====== STARTUP ======
+    // ===== SHEETS READS (public API) =====
+    async function fetchSheetRange(sheetName, range) {
+      if (!SHEET_ID) await ensureSheetId();
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Sheets API ${res.status}`);
+      return await res.json();
+    }
+
+    // ===== WRITES =====
+    async function submitToSheets(assessmentData) {
+      try {
+        await fetch(WEB_APP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(assessmentData),
+        });
+        return { success: true };
+      } catch {
+        return { success: false };
+      }
+    }
+
+    // ===== STARTUP =====
     document.addEventListener('DOMContentLoaded', async () => {
       setOfflineBanner();
       window.addEventListener('online',  setOfflineBanner);
@@ -304,10 +338,10 @@
       document.getElementById('back-btn').addEventListener('click', () => showScreen('screen1'));
       document.getElementById('email-back-btn').addEventListener('click', () => showScreen('home-screen'));
 
-      document.getElementById('refresh-btn-home').addEventListener('click', () => bootstrap(true));
-      document.getElementById('refresh-btn-1').addEventListener('click', () => bootstrap(true));
-      document.getElementById('refresh-btn-2').addEventListener('click', () => bootstrap(true));
-      document.getElementById('refresh-btn-email').addEventListener('click', () => bootstrap(true));
+      document.getElementById('refresh-btn-home').addEventListener('click', () => manualRefresh());
+      document.getElementById('refresh-btn-1').addEventListener('click', () => manualRefresh());
+      document.getElementById('refresh-btn-2').addEventListener('click', () => manualRefresh());
+      document.getElementById('refresh-btn-email').addEventListener('click', () => manualRefresh());
 
       // Screen 1 handlers
       const teacherSelect = document.getElementById('teacher-select');
@@ -321,6 +355,7 @@
       classSelect.addEventListener('change',   e => { state.selectedClass   = e.target.value; checkScreen1Complete(); });
 
       nextBtn.addEventListener('click', async () => {
+        await ensureStudentsForClass(state.selectedClass);
         updateRosterLabel();
         await refreshCountsAndRender();
         showScreen('screen2');
@@ -336,7 +371,7 @@
         checkScreen2Complete();
       });
 
-      // Multi-select open/close (keep open on click)
+      // Multi-select with keep-open behavior
       let suppressCloseOnce = false;
       const msButton = document.getElementById('ms-button');
       const msPanel  = document.getElementById('ms-panel');
@@ -349,40 +384,84 @@
 
       document.getElementById('submit-btn').addEventListener('click', submitAssessment);
 
-      // Email screen controls
+      // Email screen
       const emailClassSelect = document.getElementById('email-class-select');
       const emailSkillSelect = document.getElementById('email-skill-select');
       const sendEmailBtn     = document.getElementById('send-email-btn');
-
       emailClassSelect.addEventListener('change', updateSendEmailButton);
       emailSkillSelect.addEventListener('change', updateSendEmailButton);
       sendEmailBtn.addEventListener('click', sendEmailsForRoster);
 
-      // First load
-      await bootstrap(false);
-      showScreen('home-screen');
-    });
-
-    // ====== BOOTSTRAP (loads teachers/classes/skills/attrs/studentsByClass from Apps Script) ======
-    async function bootstrap(force) {
+      // Initial load
       try {
-        const data = await jsonp(WEB_APP_URL, { fn: 'bootstrap' });
-        if (!data || !data.ok) throw new Error(data && data.error || 'Bootstrap failed');
-
-        state.teachers        = data.teachers || [];
-        state.classes         = data.classes || [];
-        state.skills          = data.skills || [];
-        state.skillAttributes = data.attributes || [];
-        state.studentsByClass = data.studentsByClass || {};
-
+        await ensureSheetId();
+        await refreshAllDataOnline(true);
         populateDropdowns();
         populateEmailDropdowns();
       } catch (e) {
-        showError('Could not load lists from spreadsheet. Check Web App deployment and sheet tab names.');
+        showError('Could not load data. Check Web App URL, deployment access, and API key.');
+      }
+      showScreen('home-screen');
+    });
+
+    async function manualRefresh() {
+      try {
+        await ensureSheetId();
+        await refreshAllDataOnline(true);
+        populateDropdowns();
+        populateEmailDropdowns();
+        if (state.selectedClass) {
+          await ensureStudentsForClass(state.selectedClass, true);
+          await refreshCountsAndRender(true);
+        }
+      } catch (e) {
+        showError('Refresh failed. Verify API key, Web App URL, and permissions.');
       }
     }
 
-    // ====== UI helpers ======
+    // Prefetch ALL rosters' students using Sheets API
+    async function refreshAllDataOnline(force=false) {
+      const teachersData = await fetchSheetRange('List Builders', 'B1:BF1');
+      const classesData  = await fetchSheetRange('Group Builder', 'B1:BF1');
+      const skillsData   = await fetchSheetRange('Survey Sender', 'B2:K2');
+      const attrsData    = await fetchSheetRange('Survey Sender', 'B3:K12');
+
+      state.teachers        = teachersData.values?.[0]?.filter(v => v && String(v).trim() !== '') || [];
+      state.classes         = classesData.values?.[0]?.filter(v => v && String(v).trim() !== '') || [];
+      state.skills          = skillsData.values?.[0]?.filter(v => v && String(v).trim() !== '') || [];
+      state.skillAttributes = attrsData.values || [];
+
+      // Prefetch students for ALL classes
+      state.studentsByClass = {};
+      const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
+      const headers = headerData.values?.[0] || [];
+      const toA1 = (n) => { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
+
+      for (const className of state.classes) {
+        const idx = headers.findIndex(h => h && String(h).trim() === className);
+        if (idx === -1) { state.studentsByClass[className] = []; continue; }
+        const colLetter = toA1(idx + 2); // B=2
+        const studentsData = await fetchSheetRange('Group Builder', `${colLetter}3:${colLetter}300`);
+        const list = studentsData.values ? studentsData.values.flat().filter(v => v && String(v).trim() !== '') : [];
+        state.studentsByClass[className] = list;
+      }
+    }
+
+    async function ensureStudentsForClass(className, force=false) {
+      // Online fetch for one class (used on Next → screen2)
+      const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
+      const allColumns = headerData.values?.[0] || [];
+      const idx = allColumns.findIndex(h => h && String(h).trim() === className);
+      if (idx === -1) { state.studentsByClass[className] = []; return; }
+
+      const toA1 = (n) => { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
+      const colLetter = toA1(idx + 2);
+      const studentsData = await fetchSheetRange('Group Builder', `${colLetter}3:${colLetter}300`);
+      const list = studentsData.values ? studentsData.values.flat().filter(v => v && String(v).trim() !== '') : [];
+      state.studentsByClass[className] = list;
+    }
+
+    // Dropdowns
     function populateDropdowns() {
       const teacherSelect = document.getElementById('teacher-select');
       const classSelect   = document.getElementById('class-select');
@@ -464,9 +543,7 @@
       panel.innerHTML = '';
 
       if (list.length === 0) {
-        panel.innerHTML = `<div class="ms-item" style="color:#6b7280;">
-          No students found for this roster.
-        </div>`;
+        panel.innerHTML = `<div class="ms-item" style="color:#6b7280;">No students found for this roster.</div>`;
         btn.textContent = 'Select students…';
         if (keepOpen) panel.classList.add('show');
         return;
@@ -489,7 +566,6 @@
           ev.stopPropagation();
           if (state.selectedStudents.has(name)) state.selectedStudents.delete(name);
           else state.selectedStudents.add(name);
-
           window._ms_keepOpen();
           renderStudentMultiselect(true);
           renderSelectedList();
@@ -501,7 +577,6 @@
 
       const n = state.selectedStudents.size;
       btn.textContent = n ? `${n} selected` : 'Select students…';
-
       if (keepOpen) panel.classList.add('show');
     }
 
@@ -536,7 +611,6 @@
         renderSelectedList();
         return;
       }
-
       if (!isOnline()) {
         state.counts = {};
         renderStudentMultiselect();
@@ -584,11 +658,7 @@
           attributes: checkedAttributes
         };
         try {
-          await fetch(WEB_APP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
+          await submitToSheets(payload);
           state.counts[student] = (state.counts[student] || 0) + 1; // optimistic
         } catch {}
       }
@@ -609,8 +679,7 @@
       const emailClassSelect = document.getElementById('email-class-select');
       const emailSkillSelect = document.getElementById('email-skill-select');
       const btn = document.getElementById('send-email-btn');
-      const canSend = !!(emailClassSelect.value && emailSkillSelect.value);
-      btn.disabled = !canSend;
+      btn.disabled = !(emailClassSelect.value && emailSkillSelect.value);
     }
 
     async function sendEmailsForRoster() {
