@@ -65,8 +65,8 @@
     .ms-item:hover { background: #f3f4f6; }
     .ms-item.selected { background: #eff6ff; }
     .ms-count { font-size: 12px; margin-left: 10px; color: #6b7280; }
-    .ms-item.zero .ms-name { color: #111827; font-weight: 600; }
-    .ms-item.nonzero .ms-name { color: #6b7280; }
+    .ms-item.zero .ms-name { color: #111827; font-weight: 600; } /* 0 = black/high priority */
+    .ms-item.nonzero .ms-name { color: #6b7280; }                /* 1+ = grey/lower priority */
     .selected-list { margin-top: 8px; }
     .selected-row { padding: 6px 8px; border: 1px dashed #e5e7eb; border-radius: 8px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
     .remove-link { color: #2563eb; font-weight: 700; cursor: pointer; }
@@ -89,23 +89,7 @@
         </div>
       </div>
 
-      <!-- START SCREEN (NEW) -->
-      <div id="start-screen" class="screen">
-        <div class="topbar">
-          <div></div>
-          <button class="btn secondary" id="refresh-btn-start">Refresh</button>
-        </div>
-
-        <div class="question" style="margin-top:8px;">
-          <button class="btn block" id="btn-assess">Assess Students</button>
-        </div>
-
-        <div class="question">
-          <button class="btn block" id="btn-email">Email Students Assessment Link</button>
-        </div>
-      </div>
-
-      <!-- Screen 1 (original) -->
+      <!-- Screen 1 -->
       <div id="screen1" class="screen">
         <div class="topbar">
           <div></div>
@@ -129,7 +113,7 @@
         <button class="btn block" id="next-btn" disabled>Next</button>
       </div>
 
-      <!-- Screen 2 (original) -->
+      <!-- Screen 2 -->
       <div id="screen2" class="screen">
         <div class="topbar">
           <div class="inline-actions">
@@ -161,51 +145,21 @@
 
         <button class="btn block" id="submit-btn" disabled>Submit Score</button>
       </div>
-
-      <!-- EMAIL SCREEN (NEW) -->
-      <div id="screen-email" class="screen">
-        <div class="topbar">
-          <div class="inline-actions">
-            <button class="btn secondary" id="back-btn-email">Back</button>
-          </div>
-          <button class="btn secondary" id="refresh-btn-email">Refresh</button>
-        </div>
-
-        <div class="question">
-          <label class="question-label">Roster</label>
-          <select id="email-class-select">
-            <option value="">Select a class...</option>
-          </select>
-        </div>
-
-        <div class="question">
-          <label class="question-label">Skill</label>
-          <select id="email-skill-select">
-            <option value="">Select a skill...</option>
-          </select>
-        </div>
-
-        <button class="btn block" id="send-email-btn" disabled style="background:#93c5fd;">Send Emails</button>
-      </div>
     </div>
   </div>
 
-  <!-- Success Popups -->
+  <!-- Success Popup -->
   <div class="overlay" id="overlay"></div>
   <div class="success-popup" id="success-popup">
     <h3>✅ Scores Saved</h3>
     <p>Choose new students or go back</p>
-  </div>
-  <div class="success-popup" id="email-success-popup">
-    <h3>✅ Emails Sent</h3>
-    <p>Returning to start…</p>
   </div>
 
   <script>
     // ===== CONFIG =====
     const SHEET_ID = '1vAemqH6f60Ly16e7fdMTDCbDudnY1xfu3IUXnMo6m0w';
     const API_KEY  = 'AIzaSyA3a5pz0sW2vL3-fLj-zH7o7xY2sXQcYD8';
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwGkrsQ9oVA6zFtlcqfep60a7UKaarxUvHlBuaUelIrJ2o0bdmr7Dic--emE3FwWMZMEQ/exec';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbydaMVU9I1Z3Ru4ZAVU5JbWtMTuwhkTi41OemYeBz_SFGyLRtN0H_-FoKTMxpURpOsvQA/exec'; // e.g., https://script.google.com/macros/s/XXX/exec
 
     // ===== OFFLINE + CACHE KEYS =====
     const CACHE_KEY = 'assessment_app_cache_v1';
@@ -235,7 +189,6 @@
       const el = document.getElementById('error-message');
       el.textContent = message;
       el.style.display = 'block';
-      setTimeout(() => { el.style.display = 'none'; }, 4000);
     }
     function showSuccessPopup() {
       document.getElementById('overlay').classList.add('show');
@@ -245,16 +198,6 @@
         document.getElementById('success-popup').classList.remove('show');
       }, 2000);
     }
-    function showEmailSuccessPopup() {
-      document.getElementById('overlay').classList.add('show');
-      const p = document.getElementById('email-success-popup');
-      p.classList.add('show');
-      setTimeout(() => {
-        p.classList.remove('show');
-        document.getElementById('overlay').classList.remove('show');
-        showScreen('start-screen');
-      }, 1600);
-    }
     function setOfflineBanner() {
       const b = document.getElementById('offline-banner');
       b.style.display = isOnline() ? 'none' : 'inline-block';
@@ -263,8 +206,12 @@
     window.addEventListener('offline', () => { setOfflineBanner(); });
 
     // ===== CACHE =====
-    function loadCache() { try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch { return null; } }
-    function saveCache(obj) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(obj)); } catch {} }
+    function loadCache() {
+      try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch { return null; }
+    }
+    function saveCache(obj) {
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(obj)); } catch {}
+    }
     function cacheIsStale(cache) {
       if (!cache || !cache.timestamp) return true;
       const then = new Date(cache.timestamp).getTime();
@@ -374,76 +321,17 @@
       saveQueue(remaining);
     }
 
-    // ===== EMAIL (client-trigger) =====
-    function updateSendEmailButtonState() {
-      const cls = document.getElementById('email-class-select').value;
-      const skl = document.getElementById('email-skill-select').value;
-      const btn = document.getElementById('send-email-btn');
-      const enabled = !!(cls && skl);
-      btn.disabled = !enabled;
-      btn.style.background = enabled ? '#2563eb' : '#93c5fd'; // bright vs light blue
-    }
-
-    function populateEmailDropdowns() {
-      const classSel = document.getElementById('email-class-select');
-      const skillSel = document.getElementById('email-skill-select');
-
-      classSel.innerHTML = '<option value="">Select a class...</option>';
-      skillSel.innerHTML = '<option value="">Select a skill...</option>';
-
-      (state.classes || []).forEach(v => {
-        const o = document.createElement('option'); o.value = v; o.textContent = v; classSel.appendChild(o);
-      });
-      (state.skills || []).forEach(v => {
-        const o = document.createElement('option'); o.value = v; o.textContent = v; skillSel.appendChild(o);
-      });
-    }
-
-    async function sendAssessmentEmails(roster, skill) {
-      // Mirrors queue-then-send style; uses optimistic behavior with no-cors.
-      if (!isOnline()) {
-        showError('Go online to send emails.');
-        throw new Error('Offline');
-      }
-      await fetch(WEB_APP_URL, {
-        method: 'POST',
-        mode: 'no-cors', // keep consistent with current deployment; assumes server succeeds
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'email', roster, skill }),
-      });
-      // We can’t read response in no-cors; assume success like assessments flow
-      return { success: true };
-    }
-
     // ===== STARTUP =====
     document.addEventListener('DOMContentLoaded', () => {
       setOfflineBanner();
       initApp();
 
-      // Refresh buttons (global + per screen)
-      document.getElementById('refresh-btn-start').addEventListener('click', () => manualRefresh());
+      // Refresh buttons
       document.getElementById('refresh-btn-1').addEventListener('click', () => manualRefresh());
       document.getElementById('refresh-btn-2').addEventListener('click', () => manualRefresh());
-      document.getElementById('refresh-btn-email').addEventListener('click', async () => {
-        if (!isOnline()) return;
-        await refreshAllDataOnline(true);
-        populateEmailDropdowns();
-        updateSendEmailButtonState();
-      });
 
-      // Start screen buttons
-      document.getElementById('btn-assess').addEventListener('click', () => {
-        showScreen('screen1'); // go to existing flow
-      });
-      document.getElementById('btn-email').addEventListener('click', () => {
-        populateEmailDropdowns();
-        updateSendEmailButtonState();
-        showScreen('screen-email');
-      });
-
-      // Back buttons
-      document.getElementById('back-btn').addEventListener('click', () => showScreen('screen1')); // existing
-      document.getElementById('back-btn-email').addEventListener('click', () => showScreen('start-screen'));
+      // Back button
+      document.getElementById('back-btn').addEventListener('click', () => showScreen('screen1'));
 
       // Screen 1 handlers
       const teacherSelect = document.getElementById('teacher-select');
@@ -473,7 +361,7 @@
         checkScreen2Complete();
       });
 
-      // Multi-select open/close
+      // Multi-select open/close with suppression so it stays open on clicks
       let suppressCloseOnce = false;
       const msButton = document.getElementById('ms-button');
       const msPanel  = document.getElementById('ms-panel');
@@ -486,34 +374,11 @@
         if (suppressCloseOnce) { suppressCloseOnce = false; return; }
         if (!msPanel.contains(e.target) && e.target !== msButton) msPanel.classList.remove('show');
       });
+
+      // expose suppression + re-render flag to item clicks
       window._ms_keepOpen = () => { suppressCloseOnce = true; };
 
       document.getElementById('submit-btn').addEventListener('click', submitAssessment);
-
-      // Email screen handlers
-      document.getElementById('email-class-select').addEventListener('change', updateSendEmailButtonState);
-      document.getElementById('email-skill-select').addEventListener('change', updateSendEmailButtonState);
-      document.getElementById('send-email-btn').addEventListener('click', async () => {
-        const btn = document.getElementById('send-email-btn');
-        const roster = document.getElementById('email-class-select').value;
-        const skill  = document.getElementById('email-skill-select').value;
-        if (!roster || !skill) return;
-
-        const prev = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = isOnline() ? 'Sending…' : 'Sending (queued)…';
-
-        try {
-          await sendAssessmentEmails(roster, skill);
-          btn.textContent = 'Send Emails';
-          showEmailSuccessPopup();
-        } catch (err) {
-          btn.textContent = prev;
-          showError(err.message || 'Failed to send emails.');
-        } finally {
-          btn.disabled = false;
-        }
-      });
     });
 
     async function initApp() {
@@ -532,8 +397,9 @@
       }
 
       populateDropdowns();
-      showScreen('start-screen');
+      showScreen('screen1');
 
+      // auto refresh once per day when back online
       if (!needOnline && cacheIsStale(loadCache()) && isOnline()) {
         await refreshAllDataOnline();
         populateDropdowns();
@@ -560,6 +426,7 @@
       state.studentsByClass = cache.studentsByClass || {};
     }
 
+    // Prefetch ALL rosters' students when online so offline lists work
     async function refreshAllDataOnline(force=false) {
       const teachersData = await fetchSheetRange('List Builders', 'B1:BF1');
       const classesData  = await fetchSheetRange('Group Builder', 'B1:BF1');
@@ -571,7 +438,7 @@
       state.skills          = skillsData.values?.[0]?.filter(v => v && String(v).trim() !== '') || [];
       state.skillAttributes = attrsData.values || [];
 
-      // Prefetch ALL rosters' students when online so offline lists work
+      // Prefetch students for ALL classes
       state.studentsByClass = {};
       const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
       const headers = headerData.values?.[0] || [];
@@ -610,6 +477,7 @@
         return;
       }
 
+      // Online fetch for one class + update cache
       const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
       const allColumns = headerData.values?.[0] || [];
       const idx = allColumns.findIndex(h => h && String(h).trim() === className);
@@ -718,13 +586,14 @@
           <div class="ms-count">(${count})</div>
         `;
 
+        // Keep panel open after each selection
         item.addEventListener('click', (ev) => {
           ev.stopPropagation();
           if (state.selectedStudents.has(name)) state.selectedStudents.delete(name);
           else state.selectedStudents.add(name);
 
-          window._ms_keepOpen();
-          renderStudentMultiselect(true);
+          window._ms_keepOpen();             // one-shot suppression for the document click handler
+          renderStudentMultiselect(true);    // re-render AND keep open
           renderSelectedList();
           checkScreen2Complete();
         });
@@ -732,6 +601,7 @@
         panel.appendChild(item);
       });
 
+      // Update button label
       const n = state.selectedStudents.size;
       btn.textContent = n ? `${n} selected` : 'Select students…';
 
@@ -790,7 +660,7 @@
       submitBtn.disabled = !(state.selectedSkill && state.selectedStudents.size > 0);
     }
 
-    // Submit (assessments)
+    // Submit
     async function submitAssessment() {
       const attributeItems = document.querySelectorAll('.attribute-item');
       const checkedAttributes = [];
@@ -826,13 +696,12 @@
       renderSelectedList();
       checkScreen2Complete();
 
+      // NEW: clear the attribute checkboxes so they're reset for next student(s)
       document.querySelectorAll('.attribute-item.checked').forEach(el => el.classList.remove('checked'));
 
       submitBtn.textContent = 'Submit Score';
-      submitBtn.disabled = false;
       showSuccessPopup();
     }
   </script>
 </body>
 </html>
-
