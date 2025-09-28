@@ -34,7 +34,7 @@
     .btn.secondary { background: #6b7280; }
     .btn.secondary:hover { background: #4b5563; }
     .btn.block { width: 100%; padding: 16px; border-radius: 12px; font-size: 18px; margin-top: 16px; }
-    .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    .btn:disabled { cursor: not-allowed; }
     .skill-attributes { margin-top: 12px; }
     .attribute-item { display: flex; align-items: center; padding: 10px; margin: 6px 0; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: #fef2f2; border: 2px solid #fca5a5; }
     .attribute-item.checked { background: #f0fdf4; border-color: #4ade80; }
@@ -89,7 +89,19 @@
         </div>
       </div>
 
-      <!-- Screen 1 -->
+      <!-- Home Screen -->
+      <div id="home-screen" class="screen">
+        <div class="topbar">
+          <div></div>
+          <button class="btn secondary" id="refresh-btn-home">Refresh</button>
+        </div>
+        <div style="display:grid; gap:12px; margin-top:8px;">
+          <button class="btn block" id="btn-assess">Assess Students</button>
+          <button class="btn block" id="btn-email">Email Students Assessment Link</button>
+        </div>
+      </div>
+
+      <!-- Screen 1: (unchanged) Teacher + Class -->
       <div id="screen1" class="screen">
         <div class="topbar">
           <div></div>
@@ -113,7 +125,7 @@
         <button class="btn block" id="next-btn" disabled>Next</button>
       </div>
 
-      <!-- Screen 2 -->
+      <!-- Screen 2: (unchanged) Skill + Students + Attributes -->
       <div id="screen2" class="screen">
         <div class="topbar">
           <div class="inline-actions">
@@ -145,21 +157,47 @@
 
         <button class="btn block" id="submit-btn" disabled>Submit Score</button>
       </div>
+
+      <!-- Email Screen: pick roster + skill and send email -->
+      <div id="email-screen" class="screen">
+        <div class="topbar">
+          <div class="inline-actions">
+            <button class="btn secondary" id="email-back-btn">Back</button>
+          </div>
+          <button class="btn secondary" id="refresh-btn-email">Refresh</button>
+        </div>
+
+        <div class="question">
+          <label class="question-label">Which group (roster) do you want to email?</label>
+          <select id="email-class-select">
+            <option value="">Select a class...</option>
+          </select>
+        </div>
+
+        <div class="question">
+          <label class="question-label">Skill</label>
+          <select id="email-skill-select">
+            <option value="">Select a skill...</option>
+          </select>
+        </div>
+
+        <button class="btn block" id="send-email-btn" disabled style="background:#93c5fd;">Send Email</button>
+      </div>
     </div>
   </div>
 
   <!-- Success Popup -->
   <div class="overlay" id="overlay"></div>
   <div class="success-popup" id="success-popup">
-    <h3>✅ Scores Saved</h3>
-    <p>Choose new students or go back</p>
+    <h3>✅ Success</h3>
+    <p>Done!</p>
   </div>
 
   <script>
     // ===== CONFIG =====
     const SHEET_ID = '1vAemqH6f60Ly16e7fdMTDCbDudnY1xfu3IUXnMo6m0w';
     const API_KEY  = 'AIzaSyA3a5pz0sW2vL3-fLj-zH7o7xY2sXQcYD8';
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbydaMVU9I1Z3Ru4ZAVU5JbWtMTuwhkTi41OemYeBz_SFGyLRtN0H_-FoKTMxpURpOsvQA/exec'; // e.g., https://script.google.com/macros/s/XXX/exec
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwTOJ9AD5ky646NROvdMKdT3zMDgXQMnOMeZ8zf56jMzVjLGo1ilprt6CTW5GYYKmhOrg/exec';
 
     // ===== OFFLINE + CACHE KEYS =====
     const CACHE_KEY = 'assessment_app_cache_v1';
@@ -179,6 +217,11 @@
       counts: {}, // { studentName: number } for current teacher+skill
     };
 
+    const emailState = {
+      selectedClass: '',
+      selectedSkill: ''
+    };
+
     // ===== UTIL =====
     const isOnline = () => navigator.onLine;
     function showScreen(id) {
@@ -196,7 +239,7 @@
       setTimeout(() => {
         document.getElementById('overlay').classList.remove('show');
         document.getElementById('success-popup').classList.remove('show');
-      }, 2000);
+      }, 1500);
     }
     function setOfflineBanner() {
       const b = document.getElementById('offline-banner');
@@ -326,11 +369,32 @@
       setOfflineBanner();
       initApp();
 
-      // Refresh buttons
+      // Home actions
+      document.getElementById('btn-assess').addEventListener('click', () => {
+        showScreen('screen1');
+      });
+      document.getElementById('btn-email').addEventListener('click', () => {
+        populateEmailDropdowns();
+        showScreen('email-screen');
+        updateSendEmailButton();
+      });
+      document.getElementById('refresh-btn-home').addEventListener('click', () => manualRefresh());
+
+      // Back/Refresh for email screen
+      document.getElementById('email-back-btn').addEventListener('click', () => {
+        showScreen('home-screen');
+      });
+      document.getElementById('refresh-btn-email').addEventListener('click', async () => {
+        await manualRefresh();
+        populateEmailDropdowns();
+        updateSendEmailButton();
+      });
+
+      // Existing refresh buttons
       document.getElementById('refresh-btn-1').addEventListener('click', () => manualRefresh());
       document.getElementById('refresh-btn-2').addEventListener('click', () => manualRefresh());
 
-      // Back button
+      // Back button (assess flow)
       document.getElementById('back-btn').addEventListener('click', () => showScreen('screen1'));
 
       // Screen 1 handlers
@@ -361,7 +425,7 @@
         checkScreen2Complete();
       });
 
-      // Multi-select open/close with suppression so it stays open on clicks
+      // Multiselect open/close
       let suppressCloseOnce = false;
       const msButton = document.getElementById('ms-button');
       const msPanel  = document.getElementById('ms-panel');
@@ -374,11 +438,24 @@
         if (suppressCloseOnce) { suppressCloseOnce = false; return; }
         if (!msPanel.contains(e.target) && e.target !== msButton) msPanel.classList.remove('show');
       });
-
-      // expose suppression + re-render flag to item clicks
       window._ms_keepOpen = () => { suppressCloseOnce = true; };
 
       document.getElementById('submit-btn').addEventListener('click', submitAssessment);
+
+      // Email screen controls
+      const emailClassSelect = document.getElementById('email-class-select');
+      const emailSkillSelect = document.getElementById('email-skill-select');
+      const sendEmailBtn     = document.getElementById('send-email-btn');
+
+      emailClassSelect.addEventListener('change', (e) => {
+        emailState.selectedClass = e.target.value;
+        updateSendEmailButton();
+      });
+      emailSkillSelect.addEventListener('change', (e) => {
+        emailState.selectedSkill = e.target.value;
+        updateSendEmailButton();
+      });
+      sendEmailBtn.addEventListener('click', sendEmailsForRoster);
     });
 
     async function initApp() {
@@ -397,12 +474,14 @@
       }
 
       populateDropdowns();
-      showScreen('screen1');
+      populateEmailDropdowns();
+      showScreen('home-screen');
 
       // auto refresh once per day when back online
       if (!needOnline && cacheIsStale(loadCache()) && isOnline()) {
         await refreshAllDataOnline();
         populateDropdowns();
+        populateEmailDropdowns();
       }
 
       flushQueue();
@@ -412,6 +491,7 @@
       if (!isOnline()) return;
       await refreshAllDataOnline(true);
       populateDropdowns();
+      populateEmailDropdowns();
       if (state.selectedClass) {
         await ensureStudentsForClass(state.selectedClass, true);
         await refreshCountsAndRender(true);
@@ -516,6 +596,24 @@
       });
     }
 
+    function populateEmailDropdowns() {
+      const classSelect = document.getElementById('email-class-select');
+      const skillSelect = document.getElementById('email-skill-select');
+
+      classSelect.innerHTML = '<option value="">Select a class...</option>';
+      skillSelect.innerHTML = '<option value="">Select a skill...</option>';
+
+      state.classes.forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v; classSelect.appendChild(o);
+      });
+      state.skills.forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v; skillSelect.appendChild(o);
+      });
+
+      emailState.selectedClass = '';
+      emailState.selectedSkill = '';
+    }
+
     function updateRosterLabel() {
       const el = document.getElementById('roster-name');
       if (state.selectedClass) {
@@ -526,7 +624,6 @@
       }
     }
 
-    // Show skill attributes
     function showSkillAttributes() {
       const c = document.getElementById('skill-attributes');
       c.innerHTML = '';
@@ -586,14 +683,13 @@
           <div class="ms-count">(${count})</div>
         `;
 
-        // Keep panel open after each selection
         item.addEventListener('click', (ev) => {
           ev.stopPropagation();
           if (state.selectedStudents.has(name)) state.selectedStudents.delete(name);
           else state.selectedStudents.add(name);
 
-          window._ms_keepOpen();             // one-shot suppression for the document click handler
-          renderStudentMultiselect(true);    // re-render AND keep open
+          window._ms_keepOpen();
+          renderStudentMultiselect(true);
           renderSelectedList();
           checkScreen2Complete();
         });
@@ -601,7 +697,6 @@
         panel.appendChild(item);
       });
 
-      // Update button label
       const n = state.selectedStudents.size;
       btn.textContent = n ? `${n} selected` : 'Select students…';
 
@@ -660,7 +755,7 @@
       submitBtn.disabled = !(state.selectedSkill && state.selectedStudents.size > 0);
     }
 
-    // Submit
+    // Submit Assessments
     async function submitAssessment() {
       const attributeItems = document.querySelectorAll('.attribute-item');
       const checkedAttributes = [];
@@ -696,14 +791,76 @@
       renderSelectedList();
       checkScreen2Complete();
 
-      // NEW: clear the attribute checkboxes so they're reset for next student(s)
       document.querySelectorAll('.attribute-item.checked').forEach(el => el.classList.remove('checked'));
 
       submitBtn.textContent = 'Submit Score';
       showSuccessPopup();
     }
+
+    // ===== Email flow helpers =====
+    function populateEmailDropdowns() {
+      const classSelect = document.getElementById('email-class-select');
+      const skillSelect = document.getElementById('email-skill-select');
+
+      classSelect.innerHTML = '<option value="">Select a class...</option>';
+      skillSelect.innerHTML = '<option value="">Select a skill...</option>';
+
+      state.classes.forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v; classSelect.appendChild(o);
+      });
+      state.skills.forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v; skillSelect.appendChild(o);
+      });
+
+      emailState.selectedClass = '';
+      emailState.selectedSkill = '';
+    }
+
+    function updateSendEmailButton() {
+      const btn = document.getElementById('send-email-btn');
+      const canSend = !!(emailState.selectedClass && emailState.selectedSkill);
+      btn.disabled = !canSend;
+      btn.style.background = canSend ? '#2563eb' : '#93c5fd'; // bright vs light blue
+    }
+
+    async function sendEmailsForRoster() {
+      const btn = document.getElementById('send-email-btn');
+      if (btn.disabled) return;
+
+      btn.disabled = true;
+      const prevText = btn.textContent;
+      btn.textContent = isOnline() ? 'Sending…' : 'Sending (requires online)…';
+
+      try {
+        await fetch(WEB_APP_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'email_students',
+            roster: emailState.selectedClass,
+            skill:  emailState.selectedSkill
+          }),
+        });
+
+        showSuccessPopup();
+        setTimeout(() => {
+          showScreen('home-screen');
+          btn.textContent = prevText;
+          btn.disabled = true;
+          btn.style.background = '#93c5fd';
+        }, 500);
+      } catch (e) {
+        const msg = document.getElementById('error-message');
+        msg.textContent = 'Could not send emails. Check connection and try Refresh.';
+        msg.style.display = 'block';
+        btn.textContent = prevText;
+        updateSendEmailButton();
+      }
+    }
   </script>
 </body>
 </html>
+
 
 
