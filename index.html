@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Assessment" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Student Assessment App</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -65,8 +66,8 @@
     .ms-item:hover { background: #f3f4f6; }
     .ms-item.selected { background: #eff6ff; }
     .ms-count { font-size: 12px; margin-left: 10px; color: #6b7280; }
-    .ms-item.zero .ms-name { color: #111827; font-weight: 600; }
-    .ms-item.nonzero .ms-name { color: #6b7280; }
+    .ms-item.zero .ms-name { color: #111827; font-weight: 600; } /* 0 = black/high priority */
+    .ms-item.nonzero .ms-name { color: #6b7280; }                /* 1+ = grey/lower priority */
     .selected-list { margin-top: 8px; }
     .selected-row { padding: 6px 8px; border: 1px dashed #e5e7eb; border-radius: 8px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
     .remove-link { color: #2563eb; font-weight: 700; cursor: pointer; }
@@ -195,23 +196,21 @@
 
   <script>
     // ===== CONFIG =====
-    // Fetch this from the deployed Apps Script (so we don't hardcode an ID).
-    let SHEET_ID = '';
-    const API_KEY  = 'YOUR_GOOGLE_SHEETS_API_KEY_HERE';
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby4po4t45sJuou9wJ0EmKOi7U7jbxYuS0Yze6WnxUY6XRBbnwivxFo0XNimyotSqbrtoQ/exec'; // https://script.google.com/macros/s/.../exec
+    // Your deployed Apps Script Web App URL (runs with your account, can read private sheet):
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxDlSnOEuJr_jxoeer_pCrG8oKDB3-iwY-psxUtY1vwxg0Nc2RKW7DkTf0sO6EJDbnxHw/exec';
 
     // ===== STATE =====
     const state = {
       teachers: [],
       classes: [],
       skills: [],
-      skillAttributes: [],
-      studentsByClass: {}, // { className: [students...] }
+      skillAttributes: [],   // 10x10
+      studentsByClass: {},   // { class: [students...] }
       selectedTeacher: '',
       selectedClass: '',
       selectedSkill: '',
       selectedStudents: new Set(),
-      counts: {}, // { studentName: number }
+      counts: {}
     };
 
     // ===== UTIL =====
@@ -239,8 +238,9 @@
       const b = document.getElementById('offline-banner');
       b.style.display = isOnline() ? 'none' : 'inline-block';
     }
+    function toA1(n) { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; }
 
-    // ===== JSONP for GETs to Apps Script (sheetid + counts) =====
+    // ===== JSONP (for GETs to Apps Script) =====
     function jsonp(url, params = {}) {
       return new Promise((resolve, reject) => {
         const cbName = 'cb_' + Math.random().toString(36).slice(2);
@@ -250,7 +250,7 @@
         script.src = `${url}?${qs}`;
         script.async = true;
 
-        let timeout = setTimeout(() => {
+        const timeout = setTimeout(() => {
           delete window[cbName];
           script.remove();
           reject(new Error('JSONP timeout'));
@@ -274,14 +274,21 @@
       });
     }
 
-    async function ensureSheetId() {
-      if (SHEET_ID) return SHEET_ID;
-      const data = await jsonp(WEB_APP_URL, { fn: 'sheetid' });
-      if (!data || !data.ok || !data.id) throw new Error('Could not fetch Sheet ID');
-      SHEET_ID = data.id;
-      return SHEET_ID;
+    // ===== Private reads via Apps Script (no API key needed) =====
+    async function fetchSheetRange(sheetName, rangeA1) {
+      const data = await jsonp(WEB_APP_URL, {
+        fn: 'values',
+        sheet: sheetName,
+        a1: rangeA1
+      });
+      if (!data || !data.ok) {
+        throw new Error(`Values fetch failed for ${sheetName}!${rangeA1}: ${data && data.error ? data.error : 'unknown error'}`);
+      }
+      // Match the shape the app expects
+      return { values: data.values };
     }
 
+    // Counts via Apps Script
     async function fetchCountsFor(teacher, skill, students) {
       if (!teacher || !skill || !students?.length) return {};
       try {
@@ -295,29 +302,6 @@
         return data.counts || {};
       } catch {
         return {};
-      }
-    }
-
-    // ===== SHEETS READS (public API) =====
-    async function fetchSheetRange(sheetName, range) {
-      if (!SHEET_ID) await ensureSheetId();
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Sheets API ${res.status}`);
-      return await res.json();
-    }
-
-    // ===== WRITES =====
-    async function submitToSheets(assessmentData) {
-      try {
-        await fetch(WEB_APP_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(assessmentData),
-        });
-        return { success: true };
-      } catch {
-        return { success: false };
       }
     }
 
@@ -394,19 +378,17 @@
 
       // Initial load
       try {
-        await ensureSheetId();
         await refreshAllDataOnline(true);
         populateDropdowns();
         populateEmailDropdowns();
       } catch (e) {
-        showError('Could not load data. Check Web App URL, deployment access, and API key.');
+        showError('Could not load data. Check Web App URL and deployment access.');
       }
       showScreen('home-screen');
     });
 
     async function manualRefresh() {
       try {
-        await ensureSheetId();
         await refreshAllDataOnline(true);
         populateDropdowns();
         populateEmailDropdowns();
@@ -415,11 +397,11 @@
           await refreshCountsAndRender(true);
         }
       } catch (e) {
-        showError('Refresh failed. Verify API key, Web App URL, and permissions.');
+        showError('Refresh failed. Verify Web App URL and permissions.');
       }
     }
 
-    // Prefetch ALL rosters' students using Sheets API
+    // Prefetch ALL lists + all rosters’ students (private reads via Apps Script)
     async function refreshAllDataOnline(force=false) {
       const teachersData = await fetchSheetRange('List Builders', 'B1:BF1');
       const classesData  = await fetchSheetRange('Group Builder', 'B1:BF1');
@@ -433,9 +415,7 @@
 
       // Prefetch students for ALL classes
       state.studentsByClass = {};
-      const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
-      const headers = headerData.values?.[0] || [];
-      const toA1 = (n) => { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
+      const headers = classesData.values?.[0] || [];
 
       for (const className of state.classes) {
         const idx = headers.findIndex(h => h && String(h).trim() === className);
@@ -447,14 +427,12 @@
       }
     }
 
-    async function ensureStudentsForClass(className, force=false) {
-      // Online fetch for one class (used on Next → screen2)
-      const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
-      const allColumns = headerData.values?.[0] || [];
-      const idx = allColumns.findIndex(h => h && String(h).trim() === className);
+    async function ensureStudentsForClass(className) {
+      const classesData  = await fetchSheetRange('Group Builder', 'B1:BF1');
+      const headers = classesData.values?.[0] || [];
+      const idx = headers.findIndex(h => h && String(h).trim() === className);
       if (idx === -1) { state.studentsByClass[className] = []; return; }
 
-      const toA1 = (n) => { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
       const colLetter = toA1(idx + 2);
       const studentsData = await fetchSheetRange('Group Builder', `${colLetter}3:${colLetter}300`);
       const list = studentsData.values ? studentsData.values.flat().filter(v => v && String(v).trim() !== '') : [];
@@ -611,6 +589,7 @@
         renderSelectedList();
         return;
       }
+
       if (!isOnline()) {
         state.counts = {};
         renderStudentMultiselect();
@@ -658,7 +637,11 @@
           attributes: checkedAttributes
         };
         try {
-          await submitToSheets(payload);
+          await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
           state.counts[student] = (state.counts[student] || 0) + 1; // optimistic
         } catch {}
       }
@@ -693,7 +676,7 @@
       btn.textContent = 'Sending…';
 
       try {
-        await fetch(WEB_APP_URL, {
+        const res = await fetch(WEB_APP_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -702,6 +685,7 @@
             skill:  emailSkillSelect.value
           }),
         });
+        // Optional: you could check res.json() for {success:true}
         showPopup('✅ Email Sent');
       } catch {
         showPopup('⚠️ Failed to send');
