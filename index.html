@@ -34,7 +34,7 @@
     .btn.secondary { background: #6b7280; }
     .btn.secondary:hover { background: #4b5563; }
     .btn.block { width: 100%; padding: 16px; border-radius: 12px; font-size: 18px; margin-top: 16px; }
-    .btn:disabled { cursor: not-allowed; }
+    .btn:disabled { background: #9ca3af; cursor: not-allowed; }
     .skill-attributes { margin-top: 12px; }
     .attribute-item { display: flex; align-items: center; padding: 10px; margin: 6px 0; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: #fef2f2; border: 2px solid #fca5a5; }
     .attribute-item.checked { background: #f0fdf4; border-color: #4ade80; }
@@ -52,8 +52,6 @@
     .overlay.show { display: block; }
     .roster-label { font-size: 14px; color: #374151; margin: -2px 0 10px 0; }
     .inline-actions { display: flex; gap: 8px; }
-
-    /* Multi-select dropdown */
     .ms-wrapper { position: relative; }
     .ms-button { display: flex; align-items: center; justify-content: space-between; }
     .ms-panel {
@@ -65,8 +63,8 @@
     .ms-item:hover { background: #f3f4f6; }
     .ms-item.selected { background: #eff6ff; }
     .ms-count { font-size: 12px; margin-left: 10px; color: #6b7280; }
-    .ms-item.zero .ms-name { color: #111827; font-weight: 600; } /* 0 = black/high priority */
-    .ms-item.nonzero .ms-name { color: #6b7280; }                /* 1+ = grey/lower priority */
+    .ms-item.zero .ms-name { color: #111827; font-weight: 600; }
+    .ms-item.nonzero .ms-name { color: #6b7280; }
     .selected-list { margin-top: 8px; }
     .selected-row { padding: 6px 8px; border: 1px dashed #e5e7eb; border-radius: 8px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
     .remove-link { color: #2563eb; font-weight: 700; cursor: pointer; }
@@ -101,10 +99,12 @@
         </div>
       </div>
 
-      <!-- Screen 1: (unchanged) Teacher + Class -->
+      <!-- Screen 1: Teacher + Class -->
       <div id="screen1" class="screen">
         <div class="topbar">
-          <div></div>
+          <div class="inline-actions">
+            <button class="btn secondary" id="screen1-back-btn">Back</button>
+          </div>
           <button class="btn secondary" id="refresh-btn-1">Refresh</button>
         </div>
 
@@ -125,7 +125,7 @@
         <button class="btn block" id="next-btn" disabled>Next</button>
       </div>
 
-      <!-- Screen 2: (unchanged) Skill + Students + Attributes -->
+      <!-- Screen 2: Skill + Students + Attributes -->
       <div id="screen2" class="screen">
         <div class="topbar">
           <div class="inline-actions">
@@ -143,8 +143,6 @@
 
         <div class="question">
           <div class="roster-label" id="roster-name" style="display:none;"></div>
-
-          <!-- Multi-select student control -->
           <label class="question-label">Students</label>
           <div class="ms-wrapper">
             <div class="selectlike ms-button" id="ms-button">Select students…</div>
@@ -158,7 +156,7 @@
         <button class="btn block" id="submit-btn" disabled>Submit Score</button>
       </div>
 
-      <!-- Email Screen: pick roster + skill and send email -->
+      <!-- Screen 3: Email Students -->
       <div id="email-screen" class="screen">
         <div class="topbar">
           <div class="inline-actions">
@@ -168,20 +166,20 @@
         </div>
 
         <div class="question">
-          <label class="question-label">Which group (roster) do you want to email?</label>
+          <label class="question-label">Choose Roster</label>
           <select id="email-class-select">
             <option value="">Select a class...</option>
           </select>
         </div>
 
         <div class="question">
-          <label class="question-label">Skill</label>
+          <label class="question-label">Choose Skill</label>
           <select id="email-skill-select">
             <option value="">Select a skill...</option>
           </select>
         </div>
 
-        <button class="btn block" id="send-email-btn" disabled style="background:#93c5fd;">Send Email</button>
+        <button class="btn block" id="send-email-btn" disabled>Send Email</button>
       </div>
     </div>
   </div>
@@ -189,678 +187,82 @@
   <!-- Success Popup -->
   <div class="overlay" id="overlay"></div>
   <div class="success-popup" id="success-popup">
-    <h3>✅ Success</h3>
-    <p>Done!</p>
+    <h3 id="popup-text">✅ Saved</h3>
+    <p>Returning to Home...</p>
   </div>
 
   <script>
-    // ===== CONFIG =====
-    const SHEET_ID = '1vAemqH6f60Ly16e7fdMTDCbDudnY1xfu3IUXnMo6m0w';
-    const API_KEY  = 'AIzaSyA3a5pz0sW2vL3-fLj-zH7o7xY2sXQcYD8';
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwTOJ9AD5ky646NROvdMKdT3zMDgXQMnOMeZ8zf56jMzVjLGo1ilprt6CTW5GYYKmhOrg/exec';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbypa7WSfQANS5COT0T4ADMhKZApdGiwugrpAn0PSlU51IslPoiIJ_0ZdSkk_3K9_KNxDA/exec'; // replace after deployment
 
-    // ===== OFFLINE + CACHE KEYS =====
-    const CACHE_KEY = 'assessment_app_cache_v1';
-    const QUEUE_KEY = 'assessment_app_queue_v1';
-
-    // ===== STATE =====
     const state = {
       teachers: [],
       classes: [],
       skills: [],
-      skillAttributes: [],
-      studentsByClass: {}, // { className: [students...] }
       selectedTeacher: '',
       selectedClass: '',
       selectedSkill: '',
-      selectedStudents: new Set(),
-      counts: {}, // { studentName: number } for current teacher+skill
     };
 
-    const emailState = {
-      selectedClass: '',
-      selectedSkill: ''
-    };
-
-    // ===== UTIL =====
-    const isOnline = () => navigator.onLine;
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
-    function showError(message) {
-      const el = document.getElementById('error-message');
-      el.textContent = message;
-      el.style.display = 'block';
-    }
-    function showSuccessPopup() {
+    function showPopup(message) {
+      document.getElementById('popup-text').textContent = message;
       document.getElementById('overlay').classList.add('show');
       document.getElementById('success-popup').classList.add('show');
       setTimeout(() => {
         document.getElementById('overlay').classList.remove('show');
         document.getElementById('success-popup').classList.remove('show');
-      }, 1500);
-    }
-    function setOfflineBanner() {
-      const b = document.getElementById('offline-banner');
-      b.style.display = isOnline() ? 'none' : 'inline-block';
-    }
-    window.addEventListener('online',  () => { setOfflineBanner(); flushQueue(); });
-    window.addEventListener('offline', () => { setOfflineBanner(); });
-
-    // ===== CACHE =====
-    function loadCache() {
-      try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch { return null; }
-    }
-    function saveCache(obj) {
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify(obj)); } catch {}
-    }
-    function cacheIsStale(cache) {
-      if (!cache || !cache.timestamp) return true;
-      const then = new Date(cache.timestamp).getTime();
-      const now  = Date.now();
-      const ONE_DAY = 24 * 60 * 60 * 1000;
-      return (now - then) > ONE_DAY;
+        showScreen('home-screen');
+      }, 2000);
     }
 
-    // ===== JSONP for counts (avoids CORS) =====
-    function jsonp(url, params = {}) {
-      return new Promise((resolve, reject) => {
-        const cbName = 'cb_' + Math.random().toString(36).slice(2);
-        params.callback = cbName;
-        const qs = Object.entries(params).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
-        const script = document.createElement('script');
-        script.src = `${url}?${qs}`;
-        script.async = true;
+    document.addEventListener('DOMContentLoaded', () => {
+      // Nav
+      document.getElementById('btn-assess').addEventListener('click', () => showScreen('screen1'));
+      document.getElementById('btn-email').addEventListener('click', () => showScreen('email-screen'));
 
-        let timeout = setTimeout(() => {
-          delete window[cbName];
-          script.remove();
-          reject(new Error('JSONP timeout'));
-        }, 12000);
+      document.getElementById('screen1-back-btn').addEventListener('click', () => showScreen('home-screen'));
+      document.getElementById('back-btn').addEventListener('click', () => showScreen('screen1'));
+      document.getElementById('email-back-btn').addEventListener('click', () => showScreen('home-screen'));
 
-        window[cbName] = (data) => {
-          clearTimeout(timeout);
-          delete window[cbName];
-          script.remove();
-          resolve(data);
+      // Email dropdown logic
+      const emailClassSelect = document.getElementById('email-class-select');
+      const emailSkillSelect = document.getElementById('email-skill-select');
+      const sendEmailBtn = document.getElementById('send-email-btn');
+
+      function checkEmailComplete() {
+        sendEmailBtn.disabled = !(emailClassSelect.value && emailSkillSelect.value);
+      }
+      emailClassSelect.addEventListener('change', checkEmailComplete);
+      emailSkillSelect.addEventListener('change', checkEmailComplete);
+
+      sendEmailBtn.addEventListener('click', async () => {
+        sendEmailBtn.disabled = true;
+        sendEmailBtn.textContent = 'Sending...';
+        const payload = {
+          action: 'email_students',
+          roster: emailClassSelect.value,
+          skill: emailSkillSelect.value
         };
-
-        script.onerror = () => {
-          clearTimeout(timeout);
-          delete window[cbName];
-          script.remove();
-          reject(new Error('JSONP error'));
-        };
-
-        document.body.appendChild(script);
-      });
-    }
-
-    async function fetchCountsFor(teacher, skill, students) {
-      if (!teacher || !skill || !students?.length) return {};
-      try {
-        const data = await jsonp(WEB_APP_URL, {
-          fn: 'counts',
-          teacher,
-          skill,
-          students: students.join('|'),
-        });
-        if (!data || !data.ok) return {};
-        return data.counts || {};
-      } catch {
-        return {};
-      }
-    }
-
-    // ===== SHEETS READS (public API) =====
-    async function fetchSheetRange(sheetName, range) {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!${range}?key=${API_KEY}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Sheets API ${res.status}`);
-      return await res.json();
-    }
-
-    // ===== WRITES (queue-aware) =====
-    function loadQueue()  { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; } }
-    function saveQueue(a) { try { localStorage.setItem(QUEUE_KEY, JSON.stringify(a)); } catch {} }
-
-    async function submitToSheets(assessmentData) {
-      if (!isOnline()) {
-        const q = loadQueue(); q.push(assessmentData); saveQueue(q);
-        return { success: true, queued: true };
-      }
-      try {
-        await fetch(WEB_APP_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(assessmentData),
-        });
-        return { success: true };
-      } catch {
-        const q = loadQueue(); q.push(assessmentData); saveQueue(q);
-        return { success: true, queued: true };
-      }
-    }
-
-    async function flushQueue() {
-      if (!isOnline()) return;
-      let q = loadQueue();
-      if (!q.length) return;
-      const remaining = [];
-      for (const item of q) {
         try {
           await fetch(WEB_APP_URL, {
             method: 'POST',
-            mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(item),
+            body: JSON.stringify(payload)
           });
+          showPopup('✅ Email Sent');
         } catch {
-          remaining.push(item);
+          showPopup('⚠️ Failed to send');
         }
-      }
-      saveQueue(remaining);
-    }
-
-    // ===== STARTUP =====
-    document.addEventListener('DOMContentLoaded', () => {
-      setOfflineBanner();
-      initApp();
-
-      // Home actions
-      document.getElementById('btn-assess').addEventListener('click', () => {
-        showScreen('screen1');
-      });
-      document.getElementById('btn-email').addEventListener('click', () => {
-        populateEmailDropdowns();
-        showScreen('email-screen');
-        updateSendEmailButton();
-      });
-      document.getElementById('refresh-btn-home').addEventListener('click', () => manualRefresh());
-
-      // Back/Refresh for email screen
-      document.getElementById('email-back-btn').addEventListener('click', () => {
-        showScreen('home-screen');
-      });
-      document.getElementById('refresh-btn-email').addEventListener('click', async () => {
-        await manualRefresh();
-        populateEmailDropdowns();
-        updateSendEmailButton();
+        sendEmailBtn.textContent = 'Send Email';
+        sendEmailBtn.disabled = false;
       });
 
-      // Existing refresh buttons
-      document.getElementById('refresh-btn-1').addEventListener('click', () => manualRefresh());
-      document.getElementById('refresh-btn-2').addEventListener('click', () => manualRefresh());
-
-      // Back button (assess flow)
-      document.getElementById('back-btn').addEventListener('click', () => showScreen('screen1'));
-
-      // Screen 1 handlers
-      const teacherSelect = document.getElementById('teacher-select');
-      const classSelect   = document.getElementById('class-select');
-      const nextBtn       = document.getElementById('next-btn');
-
-      function checkScreen1Complete() {
-        nextBtn.disabled = !(teacherSelect.value && classSelect.value);
-      }
-      teacherSelect.addEventListener('change', e => { state.selectedTeacher = e.target.value; checkScreen1Complete(); });
-      classSelect.addEventListener('change',   e => { state.selectedClass   = e.target.value; checkScreen1Complete(); });
-
-      nextBtn.addEventListener('click', async () => {
-        await ensureStudentsForClass(state.selectedClass);
-        updateRosterLabel();
-        await refreshCountsAndRender();
-        showScreen('screen2');
-        checkScreen2Complete();
-      });
-
-      // Screen 2 handlers
-      const skillSelect = document.getElementById('skill-select');
-      skillSelect.addEventListener('change', async (e) => {
-        state.selectedSkill = e.target.value;
-        showSkillAttributes();
-        await refreshCountsAndRender();
-        checkScreen2Complete();
-      });
-
-      // Multiselect open/close
-      let suppressCloseOnce = false;
-      const msButton = document.getElementById('ms-button');
-      const msPanel  = document.getElementById('ms-panel');
-
-      msButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        msPanel.classList.toggle('show');
-      });
-      document.addEventListener('click', (e) => {
-        if (suppressCloseOnce) { suppressCloseOnce = false; return; }
-        if (!msPanel.contains(e.target) && e.target !== msButton) msPanel.classList.remove('show');
-      });
-      window._ms_keepOpen = () => { suppressCloseOnce = true; };
-
-      document.getElementById('submit-btn').addEventListener('click', submitAssessment);
-
-      // Email screen controls
-      const emailClassSelect = document.getElementById('email-class-select');
-      const emailSkillSelect = document.getElementById('email-skill-select');
-      const sendEmailBtn     = document.getElementById('send-email-btn');
-
-      emailClassSelect.addEventListener('change', (e) => {
-        emailState.selectedClass = e.target.value;
-        updateSendEmailButton();
-      });
-      emailSkillSelect.addEventListener('change', (e) => {
-        emailState.selectedSkill = e.target.value;
-        updateSendEmailButton();
-      });
-      sendEmailBtn.addEventListener('click', sendEmailsForRoster);
-    });
-
-    async function initApp() {
-      showScreen('loading-screen');
-
-      let cache = loadCache();
-      const needOnline = !cache || cacheIsStale(cache);
-
-      if (needOnline && isOnline()) {
-        await refreshAllDataOnline();
-      } else if (cache) {
-        restoreFromCache(cache);
-      } else {
-        showError('No cached data and offline. Connect to the internet and press Refresh.');
-        return;
-      }
-
-      populateDropdowns();
-      populateEmailDropdowns();
+      // TODO: Populate teachers/classes/skills via Sheets API as before
       showScreen('home-screen');
-
-      // auto refresh once per day when back online
-      if (!needOnline && cacheIsStale(loadCache()) && isOnline()) {
-        await refreshAllDataOnline();
-        populateDropdowns();
-        populateEmailDropdowns();
-      }
-
-      flushQueue();
-    }
-
-    async function manualRefresh() {
-      if (!isOnline()) return;
-      await refreshAllDataOnline(true);
-      populateDropdowns();
-      populateEmailDropdowns();
-      if (state.selectedClass) {
-        await ensureStudentsForClass(state.selectedClass, true);
-        await refreshCountsAndRender(true);
-      }
-    }
-
-    function restoreFromCache(cache) {
-      state.teachers        = cache.teachers || [];
-      state.classes         = cache.classes || [];
-      state.skills          = cache.skills || [];
-      state.skillAttributes = cache.skillAttributes || [];
-      state.studentsByClass = cache.studentsByClass || {};
-    }
-
-    // Prefetch ALL rosters' students when online so offline lists work
-    async function refreshAllDataOnline(force=false) {
-      const teachersData = await fetchSheetRange('List Builders', 'B1:BF1');
-      const classesData  = await fetchSheetRange('Group Builder', 'B1:BF1');
-      const skillsData   = await fetchSheetRange('Survey Sender', 'B2:K2');
-      const attrsData    = await fetchSheetRange('Survey Sender', 'B3:K12');
-
-      state.teachers        = teachersData.values?.[0]?.filter(v => v && String(v).trim() !== '') || [];
-      state.classes         = classesData.values?.[0]?.filter(v => v && String(v).trim() !== '') || [];
-      state.skills          = skillsData.values?.[0]?.filter(v => v && String(v).trim() !== '') || [];
-      state.skillAttributes = attrsData.values || [];
-
-      // Prefetch students for ALL classes
-      state.studentsByClass = {};
-      const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
-      const headers = headerData.values?.[0] || [];
-      const toA1 = (n) => { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
-
-      for (const className of state.classes) {
-        const idx = headers.findIndex(h => h && String(h).trim() === className);
-        if (idx === -1) { state.studentsByClass[className] = []; continue; }
-        const colLetter = toA1(idx + 2); // B=2
-        const studentsData = await fetchSheetRange('Group Builder', `${colLetter}3:${colLetter}300`);
-        const list = studentsData.values ? studentsData.values.flat().filter(v => v && String(v).trim() !== '') : [];
-        state.studentsByClass[className] = list;
-      }
-
-      saveCache({
-        timestamp: new Date().toISOString(),
-        teachers: state.teachers,
-        classes: state.classes,
-        skills: state.skills,
-        skillAttributes: state.skillAttributes,
-        studentsByClass: state.studentsByClass,
-      });
-    }
-
-    async function ensureStudentsForClass(className, force=false) {
-      const cache = loadCache();
-      const cachedList = cache?.studentsByClass?.[className];
-
-      if (!force && Array.isArray(cachedList) && cachedList.length) {
-        state.studentsByClass[className] = cachedList;
-        return;
-      }
-
-      if (!isOnline()) {
-        state.studentsByClass[className] = cachedList || [];
-        return;
-      }
-
-      // Online fetch for one class + update cache
-      const headerData = await fetchSheetRange('Group Builder', 'B1:BF1');
-      const allColumns = headerData.values?.[0] || [];
-      const idx = allColumns.findIndex(h => h && String(h).trim() === className);
-      if (idx === -1) { state.studentsByClass[className] = []; return; }
-
-      const toA1 = (n) => { let s=''; while (n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
-      const colLetter = toA1(idx + 2);
-      const studentsData = await fetchSheetRange('Group Builder', `${colLetter}3:${colLetter}300`);
-      const list = studentsData.values ? studentsData.values.flat().filter(v => v && String(v).trim() !== '') : [];
-      state.studentsByClass[className] = list;
-
-      const newCache = loadCache() || { studentsByClass: {} };
-      newCache.studentsByClass = newCache.studentsByClass || {};
-      newCache.studentsByClass[className] = list;
-      newCache.timestamp = new Date().toISOString();
-      saveCache(newCache);
-    }
-
-    function populateDropdowns() {
-      const teacherSelect = document.getElementById('teacher-select');
-      const classSelect   = document.getElementById('class-select');
-      const skillSelect   = document.getElementById('skill-select');
-
-      teacherSelect.innerHTML = '<option value="">Select a teacher...</option>';
-      classSelect.innerHTML   = '<option value="">Select a class...</option>';
-      skillSelect.innerHTML   = '<option value="">Select a skill...</option>';
-
-      state.teachers.forEach(v => {
-        const o = document.createElement('option'); o.value = v; o.textContent = v; teacherSelect.appendChild(o);
-      });
-      state.classes.forEach(v => {
-        const o = document.createElement('option'); o.value = v; o.textContent = v; classSelect.appendChild(o);
-      });
-      state.skills.forEach(v => {
-        const o = document.createElement('option'); o.value = v; o.textContent = v; skillSelect.appendChild(o);
-      });
-    }
-
-    function populateEmailDropdowns() {
-      const classSelect = document.getElementById('email-class-select');
-      const skillSelect = document.getElementById('email-skill-select');
-
-      classSelect.innerHTML = '<option value="">Select a class...</option>';
-      skillSelect.innerHTML = '<option value="">Select a skill...</option>';
-
-      state.classes.forEach(v => {
-        const o = document.createElement('option'); o.value = v; o.textContent = v; classSelect.appendChild(o);
-      });
-      state.skills.forEach(v => {
-        const o = document.createElement('option'); o.value = v; o.textContent = v; skillSelect.appendChild(o);
-      });
-
-      emailState.selectedClass = '';
-      emailState.selectedSkill = '';
-    }
-
-    function updateRosterLabel() {
-      const el = document.getElementById('roster-name');
-      if (state.selectedClass) {
-        el.textContent = `Roster: ${state.selectedClass}`;
-        el.style.display = 'block';
-      } else {
-        el.style.display = 'none';
-      }
-    }
-
-    function showSkillAttributes() {
-      const c = document.getElementById('skill-attributes');
-      c.innerHTML = '';
-      c.style.display = 'block';
-
-      const idx = state.skills.indexOf(state.selectedSkill);
-      if (idx === -1) return;
-
-      const rows = state.skillAttributes || [];
-      const col = Array.from({ length: 10 }, (_, r) => {
-        const row = rows[r] || [];
-        return (row[idx] || '').toString().trim();
-      });
-
-      col.forEach((attribute, index) => {
-        const item = document.createElement('div');
-        item.className = 'attribute-item';
-        item.dataset.index = index;
-        item.innerHTML = `
-          <div class="attribute-checkbox"></div>
-          <div class="attribute-text">${attribute || `<em>—</em>`}</div>
-        `;
-        item.addEventListener('click', () => {
-          if (!attribute) return;
-          item.classList.toggle('checked');
-        });
-        c.appendChild(item);
-      });
-    }
-
-    // Multi-select (with counts)
-    function renderStudentMultiselect(keepOpen = false) {
-      const panel = document.getElementById('ms-panel');
-      const btn   = document.getElementById('ms-button');
-      const list  = state.studentsByClass[state.selectedClass] || [];
-      panel.innerHTML = '';
-
-      if (list.length === 0) {
-        panel.innerHTML = `<div class="ms-item" style="color:#6b7280;">
-          ${isOnline() ? 'No students found for this roster.' : 'No cached students for this roster (offline). Go online and press Refresh.'}
-        </div>`;
-        btn.textContent = 'Select students…';
-        if (keepOpen) panel.classList.add('show');
-        return;
-      }
-
-      list.forEach(name => {
-        const count = state.counts[name] || 0;
-        const item = document.createElement('div');
-        item.className =
-          'ms-item ' +
-          (state.selectedStudents.has(name) ? 'selected ' : '') +
-          (count === 0 ? 'zero' : 'nonzero');
-
-        item.innerHTML = `
-          <div class="ms-name">${name}</div>
-          <div class="ms-count">(${count})</div>
-        `;
-
-        item.addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          if (state.selectedStudents.has(name)) state.selectedStudents.delete(name);
-          else state.selectedStudents.add(name);
-
-          window._ms_keepOpen();
-          renderStudentMultiselect(true);
-          renderSelectedList();
-          checkScreen2Complete();
-        });
-
-        panel.appendChild(item);
-      });
-
-      const n = state.selectedStudents.size;
-      btn.textContent = n ? `${n} selected` : 'Select students…';
-
-      if (keepOpen) panel.classList.add('show');
-    }
-
-    function renderSelectedList() {
-      const wrap = document.getElementById('selected-list');
-      wrap.innerHTML = '';
-      if (!state.selectedStudents.size) return;
-      [...state.selectedStudents].forEach(name => {
-        const row = document.createElement('div');
-        row.className = 'selected-row';
-        row.innerHTML = `
-          <div>${name} <span style="color:#6b7280;">(${state.counts[name] || 0})</span></div>
-          <div class="remove-link">remove</div>
-        `;
-        row.querySelector('.remove-link').addEventListener('click', () => {
-          state.selectedStudents.delete(name);
-          renderStudentMultiselect(true);
-          renderSelectedList();
-          checkScreen2Complete();
-        });
-        wrap.appendChild(row);
-      });
-    }
-
-    async function refreshCountsAndRender(force=false) {
-      const cls = state.selectedClass;
-      const list = state.studentsByClass[cls] || [];
-
-      if (!state.selectedTeacher || !state.selectedSkill || list.length === 0) {
-        state.counts = {};
-        renderStudentMultiselect();
-        renderSelectedList();
-        return;
-      }
-
-      if (!isOnline()) {
-        state.counts = {};
-        renderStudentMultiselect();
-        renderSelectedList();
-        return;
-      }
-
-      try {
-        state.counts = await fetchCountsFor(state.selectedTeacher, state.selectedSkill, list);
-      } catch { state.counts = {}; }
-
-      renderStudentMultiselect();
-      renderSelectedList();
-    }
-
-    function checkScreen2Complete() {
-      const submitBtn = document.getElementById('submit-btn');
-      submitBtn.disabled = !(state.selectedSkill && state.selectedStudents.size > 0);
-    }
-
-    // Submit Assessments
-    async function submitAssessment() {
-      const attributeItems = document.querySelectorAll('.attribute-item');
-      const checkedAttributes = [];
-      attributeItems.forEach(item => {
-        if (item.classList.contains('checked')) {
-          const txt = item.querySelector('.attribute-text').textContent;
-          checkedAttributes.push(txt);
-        } else {
-          checkedAttributes.push('');
-        }
-      });
-      while (checkedAttributes.length < 10) checkedAttributes.push('');
-      if (checkedAttributes.length > 10) checkedAttributes.length = 10;
-
-      const submitBtn = document.getElementById('submit-btn');
-      submitBtn.disabled = true;
-      submitBtn.textContent = isOnline() ? 'Saving…' : 'Saving (queued)…';
-
-      const students = [...state.selectedStudents];
-      for (const student of students) {
-        const payload = {
-          teacher: state.selectedTeacher,
-          student,
-          skill: state.selectedSkill,
-          attributes: checkedAttributes
-        };
-        await submitToSheets(payload);
-        state.counts[student] = (state.counts[student] || 0) + 1; // optimistic
-      }
-
-      state.selectedStudents.clear();
-      renderStudentMultiselect(true);
-      renderSelectedList();
-      checkScreen2Complete();
-
-      document.querySelectorAll('.attribute-item.checked').forEach(el => el.classList.remove('checked'));
-
-      submitBtn.textContent = 'Submit Score';
-      showSuccessPopup();
-    }
-
-    // ===== Email flow helpers =====
-    function populateEmailDropdowns() {
-      const classSelect = document.getElementById('email-class-select');
-      const skillSelect = document.getElementById('email-skill-select');
-
-      classSelect.innerHTML = '<option value="">Select a class...</option>';
-      skillSelect.innerHTML = '<option value="">Select a skill...</option>';
-
-      state.classes.forEach(v => {
-        const o = document.createElement('option'); o.value = v; o.textContent = v; classSelect.appendChild(o);
-      });
-      state.skills.forEach(v => {
-        const o = document.createElement('option'); o.value = v; o.textContent = v; skillSelect.appendChild(o);
-      });
-
-      emailState.selectedClass = '';
-      emailState.selectedSkill = '';
-    }
-
-    function updateSendEmailButton() {
-      const btn = document.getElementById('send-email-btn');
-      const canSend = !!(emailState.selectedClass && emailState.selectedSkill);
-      btn.disabled = !canSend;
-      btn.style.background = canSend ? '#2563eb' : '#93c5fd'; // bright vs light blue
-    }
-
-    async function sendEmailsForRoster() {
-      const btn = document.getElementById('send-email-btn');
-      if (btn.disabled) return;
-
-      btn.disabled = true;
-      const prevText = btn.textContent;
-      btn.textContent = isOnline() ? 'Sending…' : 'Sending (requires online)…';
-
-      try {
-        await fetch(WEB_APP_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'email_students',
-            roster: emailState.selectedClass,
-            skill:  emailState.selectedSkill
-          }),
-        });
-
-        showSuccessPopup();
-        setTimeout(() => {
-          showScreen('home-screen');
-          btn.textContent = prevText;
-          btn.disabled = true;
-          btn.style.background = '#93c5fd';
-        }, 500);
-      } catch (e) {
-        const msg = document.getElementById('error-message');
-        msg.textContent = 'Could not send emails. Check connection and try Refresh.';
-        msg.style.display = 'block';
-        btn.textContent = prevText;
-        updateSendEmailButton();
-      }
-    }
+    });
   </script>
 </body>
 </html>
-
-
-
