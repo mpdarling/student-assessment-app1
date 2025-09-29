@@ -35,6 +35,8 @@
     .btn.secondary:hover { background: #4b5563; }
     .btn.block { width: 100%; padding: 16px; border-radius: 12px; font-size: 18px; margin-top: 16px; }
     .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    .btn.enabled { background: #2563eb; }
+    .btn.enabled:hover { background: #1d4ed8; }
     .skill-attributes { margin-top: 12px; }
     .attribute-item { display: flex; align-items: center; padding: 10px; margin: 6px 0; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: #fef2f2; border: 2px solid #fca5a5; }
     .attribute-item.checked { background: #f0fdf4; border-color: #4ade80; }
@@ -70,6 +72,13 @@
     .selected-list { margin-top: 8px; }
     .selected-row { padding: 6px 8px; border: 1px dashed #e5e7eb; border-radius: 8px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
     .remove-link { color: #2563eb; font-weight: 700; cursor: pointer; }
+
+    /* Home screen menu buttons */
+    .menu-buttons { margin-top: 40px; }
+    .menu-btn { width: 100%; padding: 20px; margin: 12px 0; background: #2563eb; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .menu-btn:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 8px 16px rgba(37,99,235,0.3); }
+    .menu-icon { font-size: 24px; }
+    .menu-subtitle { font-size: 14px; opacity: 0.9; margin-top: 40px; text-align: center; color: #6b7280; }
   </style>
 </head>
 <body>
@@ -89,10 +98,56 @@
         </div>
       </div>
 
-      <!-- Screen 1 -->
-      <div id="screen1" class="screen">
+      <!-- Home Screen - New Menu -->
+      <div id="home-screen" class="screen">
         <div class="topbar">
           <div></div>
+          <button class="btn secondary" id="refresh-btn-home">Refresh</button>
+        </div>
+
+        <div class="menu-buttons">
+          <button class="menu-btn" id="assess-btn">
+            <span class="menu-icon">📝</span>
+            <span>Assess Students</span>
+          </button>
+          
+          <button class="menu-btn" id="email-btn">
+            <span class="menu-icon">✉️</span>
+            <span>Email Students Assessment Link</span>
+          </button>
+        </div>
+
+        <p class="menu-subtitle">Choose an action to continue</p>
+      </div>
+
+      <!-- Email Screen -->
+      <div id="email-screen" class="screen">
+        <div class="topbar">
+          <button class="btn secondary" id="back-btn-email">Back</button>
+          <button class="btn secondary" id="refresh-btn-email">Refresh</button>
+        </div>
+
+        <div class="question">
+          <label class="question-label">Select Roster</label>
+          <select id="email-roster-select">
+            <option value="">Select a roster...</option>
+          </select>
+        </div>
+
+        <div class="question">
+          <label class="question-label">Select Skill</label>
+          <select id="email-skill-select">
+            <option value="">Select a skill...</option>
+          </select>
+        </div>
+
+        <button class="btn block" id="send-email-btn" disabled>Send Email</button>
+      </div>
+
+      <!-- Assessment Screen 1 (previously screen1) -->
+      <div id="screen1" class="screen">
+        <div class="topbar">
+          <button class="btn secondary" id="back-btn-assess">Back</button>
           <button class="btn secondary" id="refresh-btn-1">Refresh</button>
         </div>
 
@@ -113,7 +168,7 @@
         <button class="btn block" id="next-btn" disabled>Next</button>
       </div>
 
-      <!-- Screen 2 -->
+      <!-- Assessment Screen 2 (previously screen2) -->
       <div id="screen2" class="screen">
         <div class="topbar">
           <div class="inline-actions">
@@ -151,15 +206,15 @@
   <!-- Success Popup -->
   <div class="overlay" id="overlay"></div>
   <div class="success-popup" id="success-popup">
-    <h3>✅ Scores Saved</h3>
-    <p>Choose new students or go back</p>
+    <h3>✅ <span id="success-message">Scores Saved</span></h3>
+    <p id="success-detail">Choose new students or go back</p>
   </div>
 
   <script>
     // ===== CONFIG =====
     const SHEET_ID = '1vAemqH6f60Ly16e7fdMTDCbDudnY1xfu3IUXnMo6m0w';
     const API_KEY  = 'AIzaSyA3a5pz0sW2vL3-fLj-zH7o7xY2sXQcYD8';
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw5bbTHKgrfiZP6uQt98BYn9YwBpgW8tK-Akw06Sb1DcWgTe54ZD-q5dz8feyqS7048GA/exec'; // e.g., https://script.google.com/macros/s/XXX/exec
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw5bbTHKgrfiZP6uQt98BYn9YwBpgW8tK-Akw06Sb1DcWgTe54ZD-q5dz8feyqS7048GA/exec';
 
     // ===== OFFLINE + CACHE KEYS =====
     const CACHE_KEY = 'assessment_app_cache_v1';
@@ -177,6 +232,8 @@
       selectedSkill: '',
       selectedStudents: new Set(),
       counts: {}, // { studentName: number } for current teacher+skill
+      selectedEmailRoster: '',
+      selectedEmailSkill: '',
     };
 
     // ===== UTIL =====
@@ -190,7 +247,9 @@
       el.textContent = message;
       el.style.display = 'block';
     }
-    function showSuccessPopup() {
+    function showSuccessPopup(message = 'Scores Saved', detail = 'Choose new students or go back') {
+      document.getElementById('success-message').textContent = message;
+      document.getElementById('success-detail').textContent = detail;
       document.getElementById('overlay').classList.add('show');
       document.getElementById('success-popup').classList.add('show');
       setTimeout(() => {
@@ -220,7 +279,7 @@
       return (now - then) > ONE_DAY;
     }
 
-    // ===== JSONP for counts (avoids CORS) =====
+    // ===== JSONP for counts and email sending =====
     function jsonp(url, params = {}) {
       return new Promise((resolve, reject) => {
         const cbName = 'cb_' + Math.random().toString(36).slice(2);
@@ -267,6 +326,20 @@
         return data.counts || {};
       } catch {
         return {};
+      }
+    }
+
+    async function sendEmailToRoster(roster, skill) {
+      if (!roster || !skill) return { ok: false, error: 'Missing roster or skill' };
+      try {
+        const data = await jsonp(WEB_APP_URL, {
+          fn: 'sendemail',
+          roster,
+          skill,
+        });
+        return data;
+      } catch (error) {
+        return { ok: false, error: error.toString() };
       }
     }
 
@@ -326,14 +399,80 @@
       setOfflineBanner();
       initApp();
 
+      // Home screen buttons
+      document.getElementById('assess-btn').addEventListener('click', () => showScreen('screen1'));
+      document.getElementById('email-btn').addEventListener('click', () => {
+        populateEmailDropdowns();
+        showScreen('email-screen');
+      });
+
       // Refresh buttons
+      document.getElementById('refresh-btn-home').addEventListener('click', () => manualRefresh());
       document.getElementById('refresh-btn-1').addEventListener('click', () => manualRefresh());
       document.getElementById('refresh-btn-2').addEventListener('click', () => manualRefresh());
+      document.getElementById('refresh-btn-email').addEventListener('click', () => manualRefresh());
 
-      // Back button
+      // Back buttons
+      document.getElementById('back-btn-assess').addEventListener('click', () => showScreen('home-screen'));
+      document.getElementById('back-btn-email').addEventListener('click', () => showScreen('home-screen'));
       document.getElementById('back-btn').addEventListener('click', () => showScreen('screen1'));
 
-      // Screen 1 handlers
+      // Email screen handlers
+      const emailRosterSelect = document.getElementById('email-roster-select');
+      const emailSkillSelect = document.getElementById('email-skill-select');
+      const sendEmailBtn = document.getElementById('send-email-btn');
+
+      function checkEmailScreenComplete() {
+        const isComplete = emailRosterSelect.value && emailSkillSelect.value;
+        sendEmailBtn.disabled = !isComplete;
+        if (isComplete) {
+          sendEmailBtn.classList.add('enabled');
+        } else {
+          sendEmailBtn.classList.remove('enabled');
+        }
+      }
+
+      emailRosterSelect.addEventListener('change', e => {
+        state.selectedEmailRoster = e.target.value;
+        checkEmailScreenComplete();
+      });
+
+      emailSkillSelect.addEventListener('change', e => {
+        state.selectedEmailSkill = e.target.value;
+        checkEmailScreenComplete();
+      });
+
+      sendEmailBtn.addEventListener('click', async () => {
+        if (!isOnline()) {
+          alert('You must be online to send emails. Please connect to the internet and try again.');
+          return;
+        }
+
+        sendEmailBtn.disabled = true;
+        sendEmailBtn.textContent = 'Sending...';
+
+        const result = await sendEmailToRoster(state.selectedEmailRoster, state.selectedEmailSkill);
+        
+        if (result.ok) {
+          showSuccessPopup('Emails Sent!', `Successfully sent to ${result.emailsSent} recipient(s)`);
+          setTimeout(() => {
+            // Reset email form and go back to home
+            emailRosterSelect.value = '';
+            emailSkillSelect.value = '';
+            state.selectedEmailRoster = '';
+            state.selectedEmailSkill = '';
+            checkEmailScreenComplete();
+            showScreen('home-screen');
+          }, 2000);
+        } else {
+          alert('Error sending emails: ' + (result.error || 'Unknown error'));
+        }
+
+        sendEmailBtn.textContent = 'Send Email';
+        checkEmailScreenComplete();
+      });
+
+      // Assessment Screen 1 handlers
       const teacherSelect = document.getElementById('teacher-select');
       const classSelect   = document.getElementById('class-select');
       const nextBtn       = document.getElementById('next-btn');
@@ -352,7 +491,7 @@
         checkScreen2Complete();
       });
 
-      // Screen 2 handlers
+      // Assessment Screen 2 handlers
       const skillSelect = document.getElementById('skill-select');
       skillSelect.addEventListener('change', async (e) => {
         state.selectedSkill = e.target.value;
@@ -397,7 +536,7 @@
       }
 
       populateDropdowns();
-      showScreen('screen1');
+      showScreen('home-screen'); // Changed to show home screen first
 
       // auto refresh once per day when back online
       if (!needOnline && cacheIsStale(loadCache()) && isOnline()) {
@@ -412,6 +551,7 @@
       if (!isOnline()) return;
       await refreshAllDataOnline(true);
       populateDropdowns();
+      populateEmailDropdowns();
       if (state.selectedClass) {
         await ensureStudentsForClass(state.selectedClass, true);
         await refreshCountsAndRender(true);
@@ -513,6 +653,24 @@
       });
       state.skills.forEach(v => {
         const o = document.createElement('option'); o.value = v; o.textContent = v; skillSelect.appendChild(o);
+      });
+    }
+
+    function populateEmailDropdowns() {
+      const emailRosterSelect = document.getElementById('email-roster-select');
+      const emailSkillSelect = document.getElementById('email-skill-select');
+
+      emailRosterSelect.innerHTML = '<option value="">Select a roster...</option>';
+      emailSkillSelect.innerHTML = '<option value="">Select a skill...</option>';
+
+      // Rosters are the same as classes
+      state.classes.forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v; emailRosterSelect.appendChild(o);
+      });
+      
+      // Skills
+      state.skills.forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v; emailSkillSelect.appendChild(o);
       });
     }
 
