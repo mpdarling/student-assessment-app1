@@ -121,10 +121,18 @@
       </div>
 
       <!-- Email Screen -->
+      <!-- Email Screen -->
       <div id="email-screen" class="screen">
         <div class="topbar">
           <button class="btn secondary" id="back-btn-email">Back</button>
           <button class="btn secondary" id="refresh-btn-email">Refresh</button>
+        </div>
+
+        <div class="question">
+          <label class="question-label">Who are you?</label>
+          <select id="email-teacher-select">
+            <option value="">Select a teacher...</option>
+          </select>
         </div>
 
         <div class="question">
@@ -232,6 +240,7 @@
       selectedSkill: '',
       selectedStudents: new Set(),
       counts: {}, // { studentName: number } for current teacher+skill
+      selectedEmailTeacher: '',
       selectedEmailRoster: '',
       selectedEmailSkill: '',
     };
@@ -329,11 +338,12 @@
       }
     }
 
-    async function sendEmailToRoster(roster, skill) {
-      if (!roster || !skill) return { ok: false, error: 'Missing roster or skill' };
+    async function sendEmailToRoster(teacher, roster, skill) {
+      if (!teacher || !roster || !skill) return { ok: false, error: 'Missing teacher, roster or skill' };
       try {
         const data = await jsonp(WEB_APP_URL, {
           fn: 'sendemail',
+          teacher,
           roster,
           skill,
         });
@@ -418,12 +428,13 @@
       document.getElementById('back-btn').addEventListener('click', () => showScreen('screen1'));
 
       // Email screen handlers
+      const emailTeacherSelect = document.getElementById('email-teacher-select');
       const emailRosterSelect = document.getElementById('email-roster-select');
       const emailSkillSelect = document.getElementById('email-skill-select');
       const sendEmailBtn = document.getElementById('send-email-btn');
 
       function checkEmailScreenComplete() {
-        const isComplete = emailRosterSelect.value && emailSkillSelect.value;
+        const isComplete = emailTeacherSelect.value && emailRosterSelect.value && emailSkillSelect.value;
         sendEmailBtn.disabled = !isComplete;
         if (isComplete) {
           sendEmailBtn.classList.add('enabled');
@@ -431,6 +442,11 @@
           sendEmailBtn.classList.remove('enabled');
         }
       }
+
+      emailTeacherSelect.addEventListener('change', e => {
+        state.selectedEmailTeacher = e.target.value;
+        checkEmailScreenComplete();
+      });
 
       emailRosterSelect.addEventListener('change', e => {
         state.selectedEmailRoster = e.target.value;
@@ -442,6 +458,8 @@
         checkEmailScreenComplete();
       });
 
+      
+
       sendEmailBtn.addEventListener('click', async () => {
         if (!isOnline()) {
           alert('You must be online to send emails. Please connect to the internet and try again.');
@@ -451,14 +469,16 @@
         sendEmailBtn.disabled = true;
         sendEmailBtn.textContent = 'Sending...';
 
-        const result = await sendEmailToRoster(state.selectedEmailRoster, state.selectedEmailSkill);
+        const result = await sendEmailToRoster(state.selectedEmailTeacher, state.selectedEmailRoster, state.selectedEmailSkill);
         
         if (result.ok) {
           showSuccessPopup('Emails Sent!', `Successfully sent to ${result.emailsSent} recipient(s)`);
           setTimeout(() => {
             // Reset email form and go back to home
+            emailTeacherSelect.value = '';
             emailRosterSelect.value = '';
             emailSkillSelect.value = '';
+            state.selectedEmailTeacher = '';
             state.selectedEmailRoster = '';
             state.selectedEmailSkill = '';
             checkEmailScreenComplete();
@@ -657,17 +677,24 @@
     }
 
     function populateEmailDropdowns() {
+      const emailTeacherSelect = document.getElementById('email-teacher-select');
       const emailRosterSelect = document.getElementById('email-roster-select');
       const emailSkillSelect = document.getElementById('email-skill-select');
 
+      emailTeacherSelect.innerHTML = '<option value="">Select a teacher...</option>';
       emailRosterSelect.innerHTML = '<option value="">Select a roster...</option>';
       emailSkillSelect.innerHTML = '<option value="">Select a skill...</option>';
+
+      // Teachers
+      state.teachers.forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v; emailTeacherSelect.appendChild(o);
+      });
 
       // Rosters are the same as classes
       state.classes.forEach(v => {
         const o = document.createElement('option'); o.value = v; o.textContent = v; emailRosterSelect.appendChild(o);
       });
-      
+  
       // Skills
       state.skills.forEach(v => {
         const o = document.createElement('option'); o.value = v; o.textContent = v; emailSkillSelect.appendChild(o);
